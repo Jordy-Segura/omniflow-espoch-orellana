@@ -264,8 +264,12 @@ fun SettingsScreen(padding: PaddingValues, vm: SettingsViewModel = hiltViewModel
         AppCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Historial de demostración", style = MaterialTheme.typography.titleSmall)
-                    Text("Horario y 14 días simulados para probar reportes.", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                    Text("Datos de prueba", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Los reportes muestran solo lo que registran las cámaras. Borra aquí los datos de prueba que hayan quedado de versiones anteriores.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = InkSoft,
+                    )
                 }
                 Spacer(Modifier.width(8.dp))
                 OutlinedButton(onClick = vm::clearDemo) { Text("Borrar") }

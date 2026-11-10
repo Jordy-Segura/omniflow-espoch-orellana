@@ -103,8 +103,9 @@ OASIS_WS_PASSWORD=clave_servicio
 OMNIFLOW_API_URL=https://omniflow.tudominio.com
 ```
 
-El **modo demostración** (enlace bajo el botón Ingresar) permite entrar con un rol sin cuenta. Hasta que haya
-cámaras reales, los reportes incluyen 14 días de historial **simulado** sobre el horario real; se borra en Ajustes.
+El **modo demostración** (enlace bajo el botón Ingresar) permite entrar con un rol sin cuenta. La app no genera
+datos simulados: los reportes muestran solo lo que registran las cámaras. Si quedaron datos de prueba de una
+versión anterior, se borran en Ajustes.
 
 ## Estructura (MVVM + Clean Architecture)
 

@@ -80,7 +80,7 @@ fun ReportsScreen(padding: PaddingValues, vm: ReportsViewModel = hiltViewModel()
         if (r.hasDemoData) {
             item {
                 InfoBanner(
-                    "Incluye historial de demostración (14 días simulados) hasta que haya cámaras reales. Puedes borrarlo en Ajustes.",
+                    "Incluye datos de prueba de una versión anterior. Puedes borrarlos en Ajustes.",
                     color = StatusAmber,
                 )
             }

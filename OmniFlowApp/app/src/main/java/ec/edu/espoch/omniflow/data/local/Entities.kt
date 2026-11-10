@@ -69,7 +69,7 @@ data class ClassSessionEntity(
     val sumCount: Long = 0,
     val samples: Int = 0,
     val endedEarly: Boolean = false,
-    /** Sesion simulada para la demostracion de reportes. */
+    /** Marca datos de prueba de versiones anteriores (ya no se generan); se pueden borrar desde Ajustes. */
     val demo: Boolean = false,
 ) {
     fun toDomain() = ClassSession(
