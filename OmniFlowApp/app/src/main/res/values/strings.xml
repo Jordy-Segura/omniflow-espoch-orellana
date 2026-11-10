@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OmniFlow</string>
+    <string name="notif_channel_alerts">Alertas de laboratorios</string>
+    <string name="notif_channel_alerts_desc">Sobreaforo, uso fuera de horario, ausencias y anomalías detectadas</string>
+</resources>

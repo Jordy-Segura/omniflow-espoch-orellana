@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  OASIS (swoasis.espoch.edu.ec) solo expone HTTP, y las camaras temporales
+  (otro telefono con IP Webcam / DroidCam) y las camaras IP de la red local tambien usan HTTP.
+  Por eso se permite trafico en claro. Cuando el backend OmniFlow este detras de
+  Cloudflare Tunnel (HTTPS) se puede restringir a los dominios necesarios.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

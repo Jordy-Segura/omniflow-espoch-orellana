@@ -1,0 +1,4 @@
+# Vision computacional de camaras IP en el servidor (opcional): YOLOv8 + ByteTrack.
+# En Docker se instala torch CPU desde el indice de PyTorch para no descargar CUDA.
+ultralytics>=8.3
+lap>=0.5.12

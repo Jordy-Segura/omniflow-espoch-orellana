@@ -1,0 +1,5 @@
+modelo,exactitud,F1 macro,tiempo (s)
+Eigenfaces (PCA 150 + SVM RBF) · línea base,0.627,0.553,70.259
+SFace + 1-NN coseno,1.0,1.0,0.041
+SFace + SVM lineal,1.0,1.0,4.551
+SFace + Regresión logística,1.0,1.0,2.602

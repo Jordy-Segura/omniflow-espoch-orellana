@@ -1,0 +1,503 @@
+{
+  "source": "Anexo 3_Horario_Laboratorio_Computacion_sep26-feb27_v7.pdf (aSc Horarios, generado 29/7/2026)",
+  "period": "P0046",
+  "periodDescription": "7 SEPTIEMBRE 2026 - 5 FEBRERO 2027",
+  "careers": {
+    "TI": "ITIO",
+    "AMBI": "IAMBENA",
+    "AGRO": "IAGRENA",
+    "ZOOT": "IZOOENA"
+  },
+  "notes": "Horario de los laboratorios de computo de la ESPOCH Sede Orellana. group = prefijo de carrera del PDF + nivel (TI03 = Tecnologias de la Informacion, 3er nivel). careers traduce el prefijo al codigo OASIS de la Sede Orellana. teacherHint = docente escrito en el PDF; el resto se resuelve desde OASIS.",
+  "labs": [
+    {
+      "code": "LAB-C1",
+      "name": "Laboratorio de Cómputo 1",
+      "capacity": 30,
+      "blocks": [
+        {
+          "day": 1,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "FUNDAMENTOS DE PROGRAMACIÓN",
+          "group": "AMBI01",
+          "bloque": "BLOQUE 6"
+        },
+        {
+          "day": 1,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "CALCULO DE VARIAS VARIABLES",
+          "group": "TI03",
+          "bloque": "BLOQUE 48"
+        },
+        {
+          "day": 1,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "CONMUTACIÓN Y ENRUTAMIENTO",
+          "group": "TI05",
+          "bloque": "BLOQUE 73"
+        },
+        {
+          "day": 1,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "TECNOLOGÍA WEB",
+          "group": "TI05",
+          "bloque": "BLOQUE 2"
+        },
+        {
+          "day": 2,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "ADMINISTRACIÓN DE BASES DE DATOS",
+          "group": "TI04",
+          "bloque": "BLOQUE 50"
+        },
+        {
+          "day": 2,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "INFRAESTRUCTURA TI",
+          "group": "TI05",
+          "bloque": "BLOQUE 30"
+        },
+        {
+          "day": 2,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "CONMUTACIÓN Y ENRUTAMIENTO",
+          "group": "TI05",
+          "bloque": "BLOQUE 73"
+        },
+        {
+          "day": 2,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "BIG DATA",
+          "group": "TI05",
+          "bloque": "BLOQUE 50"
+        },
+        {
+          "day": 3,
+          "start": "07:00",
+          "end": "09:00",
+          "subject": "FUNDAMENTOS DE PROGRAMACIÓN",
+          "group": "AMBI01",
+          "bloque": "BLOQUE 6"
+        },
+        {
+          "day": 3,
+          "start": "09:00",
+          "end": "12:00",
+          "subject": "TELEDETECCIÓN",
+          "group": "AMBI05",
+          "bloque": "BLOQUE 14"
+        },
+        {
+          "day": 3,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "ECUACIONES DIFERENCIALES",
+          "group": "TI03",
+          "bloque": "BLOQUE 27"
+        },
+        {
+          "day": 3,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "FUNDAMENTOS DE PROGRAMACIÓN",
+          "group": "TI01",
+          "bloque": "BLOQUE 75"
+        },
+        {
+          "day": 3,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "ITINERARIO 1: CRIPTOGRAFÍA",
+          "group": "TI07",
+          "bloque": "BLOQUE 36"
+        },
+        {
+          "day": 4,
+          "start": "07:00",
+          "end": "09:00",
+          "subject": "TELEDETECCIÓN",
+          "group": "AMBI05",
+          "bloque": "BLOQUE 14"
+        },
+        {
+          "day": 4,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "QUIMICA",
+          "group": "TI01",
+          "bloque": "BLOQUE 72"
+        },
+        {
+          "day": 4,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "GESTIÓN DE PROYECTOS TI",
+          "group": "TI03",
+          "bloque": "BLOQUE 54"
+        },
+        {
+          "day": 4,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "SISTEMAS DE COMUNICACIÓN",
+          "group": "TI03",
+          "bloque": "BLOQUE 31"
+        },
+        {
+          "day": 4,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "INGLES I",
+          "group": "TI01",
+          "bloque": "BLOQUE 43"
+        },
+        {
+          "day": 5,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "INGLÉS III",
+          "group": "TI03",
+          "bloque": "BLOQUE 43"
+        },
+        {
+          "day": 5,
+          "start": "11:00",
+          "end": "13:00",
+          "subject": "TECNOLOGÍA WEB",
+          "group": "TI05",
+          "bloque": "BLOQUE 2"
+        },
+        {
+          "day": 5,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "FUNDAMENTOS DE PROGRAMACIÓN",
+          "group": "TI01",
+          "bloque": "BLOQUE 75"
+        },
+        {
+          "day": 5,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "ECUACIONES DIFERENCIALES",
+          "group": "TI03",
+          "bloque": "BLOQUE 27"
+        }
+      ],
+      "building": "ESPOCH Sede Orellana"
+    },
+    {
+      "code": "LAB-C2",
+      "name": "Laboratorio de Cómputo 2",
+      "capacity": 30,
+      "blocks": [
+        {
+          "day": 1,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "ANÁLISIS NUMÉRICO",
+          "group": "AMBI04",
+          "bloque": "BLOQUE 51"
+        },
+        {
+          "day": 1,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "INTEROPERABILIDAD DE PLATAFORMAS",
+          "group": "TI06",
+          "bloque": "BLOQUE 40"
+        },
+        {
+          "day": 1,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "ADMINISTRACIÓN DE BASES DE DATOS",
+          "group": "TI04",
+          "bloque": "BLOQUE 50"
+        },
+        {
+          "day": 1,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "INGLES II",
+          "group": "TI02",
+          "bloque": "BLOQUE 67"
+        },
+        {
+          "day": 2,
+          "start": "10:00",
+          "end": "12:00",
+          "subject": "MACHINE LEARNING",
+          "group": "TI06",
+          "teacherHint": "PAGUAY SOXO PAUL XAVIER"
+        },
+        {
+          "day": 2,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "INTEROPERABILIDAD DE PLATAFORMAS",
+          "group": "TI06",
+          "bloque": "BLOQUE 40"
+        },
+        {
+          "day": 2,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "FUNDAMENTOS DE BASE DE DATOS",
+          "group": "TI03",
+          "teacherHint": "PAGUAY SOXO PAUL XAVIER"
+        },
+        {
+          "day": 2,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "ADMINISTRACIÓN DE SISTEMAS OPERATIVOS",
+          "group": "TI02",
+          "bloque": "BLOQUE 30"
+        },
+        {
+          "day": 3,
+          "start": "07:00",
+          "end": "10:00",
+          "subject": "ANÁLISIS NUMÉRICO",
+          "group": "AMBI04",
+          "bloque": "BLOQUE 51"
+        },
+        {
+          "day": 3,
+          "start": "10:00",
+          "end": "12:00",
+          "subject": "FUNDAMENTOS DE BASE DE DATOS",
+          "group": "TI03",
+          "teacherHint": "PAGUAY SOXO PAUL XAVIER"
+        },
+        {
+          "day": 3,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "PROGRAMACIÓN",
+          "group": "TI02",
+          "bloque": "BLOQUE 2"
+        },
+        {
+          "day": 3,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "FUNDAMENTOS DE REDES",
+          "group": "TI04",
+          "bloque": "BLOQUE 31"
+        },
+        {
+          "day": 4,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "ADMINISTRACIÓN DE BASES DE DATOS",
+          "group": "TI04",
+          "bloque": "BLOQUE 50"
+        },
+        {
+          "day": 4,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "INTEROPERABILIDAD DE PLATAFORMAS",
+          "group": "TI06",
+          "bloque": "BLOQUE 40"
+        },
+        {
+          "day": 4,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "ESCALABILIDAD DE REDES",
+          "group": "TI06",
+          "bloque": "BLOQUE 30"
+        },
+        {
+          "day": 4,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "PROGRAMACIÓN",
+          "group": "TI02",
+          "bloque": "BLOQUE 2"
+        },
+        {
+          "day": 5,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "FÍSICA MECÁNICA",
+          "group": "TI02",
+          "bloque": "BLOQUE 41"
+        },
+        {
+          "day": 5,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "METODOLOGIA DE LA INVESTIGACION",
+          "group": "TI02",
+          "bloque": "BLOQUE 37"
+        },
+        {
+          "day": 5,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "ESCALABILIDAD DE REDES",
+          "group": "TI06",
+          "bloque": "BLOQUE 30"
+        }
+      ],
+      "building": "ESPOCH Sede Orellana"
+    },
+    {
+      "code": "LAB-C3",
+      "name": "Laboratorio de Cómputo 3",
+      "capacity": 30,
+      "blocks": [
+        {
+          "day": 1,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "TECNOLOGÍA Y DISEÑO MULTIMEDIA",
+          "group": "TI05",
+          "bloque": "BLOQUE 6"
+        },
+        {
+          "day": 1,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "MACHINE LEARNING",
+          "group": "TI06",
+          "teacherHint": "PAGUAY SOXO PAUL XAVIER"
+        },
+        {
+          "day": 2,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "CALCULO DE UNA VARIABLE",
+          "group": "TI02",
+          "bloque": "BLOQUE 27"
+        },
+        {
+          "day": 2,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "COMPUTACION MOVIL",
+          "group": "TI06",
+          "bloque": "BLOQUE 54"
+        },
+        {
+          "day": 2,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "SEGURIDAD TI",
+          "group": "TI07",
+          "bloque": "BLOQUE 75"
+        },
+        {
+          "day": 3,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "COMPUTACION MOVIL",
+          "group": "TI06",
+          "bloque": "BLOQUE 54"
+        },
+        {
+          "day": 3,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "MACHINE LEARNING",
+          "group": "TI06",
+          "teacherHint": "PAGUAY SOXO PAUL XAVIER"
+        },
+        {
+          "day": 4,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "TECNOLOGÍA Y DISEÑO MULTIMEDIA",
+          "group": "TI05",
+          "bloque": "BLOQUE 6"
+        },
+        {
+          "day": 4,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "APLICACIONES IOT",
+          "group": "TI07",
+          "bloque": "BLOQUE 73"
+        },
+        {
+          "day": 4,
+          "start": "17:00",
+          "end": "19:00",
+          "subject": "DISEÑO DE EXPERIENCIA DE USUARIO",
+          "group": "TI04",
+          "bloque": "BLOQUE 6"
+        },
+        {
+          "day": 5,
+          "start": "13:00",
+          "end": "15:00",
+          "subject": "COMPUTACION MOVIL",
+          "group": "TI06",
+          "bloque": "BLOQUE 54"
+        }
+      ],
+      "building": "ESPOCH Sede Orellana"
+    },
+    {
+      "code": "LAB-C4",
+      "name": "Laboratorio de Cómputo 4",
+      "capacity": 30,
+      "blocks": [
+        {
+          "day": 1,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "FUNDAMENTOS DE PROGRAMACIÓN",
+          "group": "ZOOT03",
+          "bloque": "BLOQUE 40"
+        },
+        {
+          "day": 2,
+          "start": "09:00",
+          "end": "11:00",
+          "subject": "MÉTODOS NUMÉRICOS",
+          "group": "AGRO03",
+          "bloque": "BLOQUE 53"
+        },
+        {
+          "day": 3,
+          "start": "07:00",
+          "end": "09:00",
+          "subject": "DISEÑO EXPERIMENTAL",
+          "group": "ZOOT05",
+          "bloque": "BLOQUE 9"
+        },
+        {
+          "day": 4,
+          "start": "15:00",
+          "end": "17:00",
+          "subject": "FUNDAMENTOS DE PROGRAMACIÓN",
+          "group": "ZOOT03",
+          "bloque": "BLOQUE 40"
+        },
+        {
+          "day": 5,
+          "start": "07:00",
+          "end": "09:00",
+          "subject": "ECONOMÍA AGRÍCOLA",
+          "group": "AGRO04",
+          "bloque": "BLOQUE 65"
+        }
+      ],
+      "building": "ESPOCH Sede Orellana"
+    }
+  ],
+  "campus": "ESPOCH Sede Orellana"
+}

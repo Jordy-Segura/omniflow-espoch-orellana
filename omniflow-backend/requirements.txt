@@ -1,0 +1,15 @@
+# API OmniFlow (nucleo)
+fastapi>=0.160
+uvicorn[standard]>=0.50
+sqlalchemy>=2.0
+psycopg[binary]>=3.2
+pydantic-settings>=2.6
+pyjwt>=2.10
+httpx>=0.28
+tzdata>=2025.1
+# Asistencia por reconocimiento facial (YuNet + SFace)
+opencv-python-headless>=4.10
+numpy>=2.0
+# Lectura de PDF de matricula (foto + cedula)
+pypdf>=5.0
+pillow>=10.0

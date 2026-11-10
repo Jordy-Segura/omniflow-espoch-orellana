@@ -1,0 +1,43 @@
+# Secretos y configuracion local (nunca se suben)
+.env
+.env.*
+!.env.example
+local.properties
+*.jks
+*.keystore
+keystore/
+
+# Bases de datos (contienen datos personales de OASIS)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Compilaciones, APK publicadas y entornos
+*.apk
+*.aab
+releases/
+build/
+.gradle/
+.kotlin/
+.venv/
+node_modules/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+*.log
+
+# Modelos descargables y datos crudos
+*.pt
+omniflow-ml/data/
+
+# Editores y sistema
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+~$*
+
+# Documentos del proyecto (se entregan aparte, no se versionan)
+docs/

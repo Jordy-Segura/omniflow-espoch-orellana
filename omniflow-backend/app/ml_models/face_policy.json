@@ -1,0 +1,19 @@
+{
+  "threshold": 0.3762,
+  "margin": 0.04,
+  "min_det_score": 0.8,
+  "min_face_px": 24,
+  "source": "omniflow-ml/notebooks/01_reconocimiento_facial_asistencia.ipynb (LFW, umbral FAR 0.1 % calibrado en entrenamiento)",
+  "metrics": {
+    "auc": 1.0,
+    "eer": 0.00065,
+    "test_far_at_threshold": 0.00094,
+    "test_tar_at_threshold": 0.9994,
+    "closed_set_accuracy_svm": 1.0,
+    "classroom_simulation": {
+      "sensibilidad (presentes detectados)": 0.9998,
+      "precisión (marcados que sí vinieron)": 0.9992,
+      "intrusos aceptados": 0.0067
+    }
+  }
+}

@@ -1,0 +1,68 @@
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.auth import MANAGERS, STAFF
+from app.database import SessionLocal, get_db
+from app.models import Lab, Person, ScheduleSlot, SlotStudent, SyncRun
+from app.repositories import audit
+from app.schemas import PersonOut, ScheduleEntryOut, ScheduleSlotOut, SyncRunOut, UserOut
+from app.services import oasis_sync
+
+router = APIRouter(prefix="/api/v1", tags=["horarios y OASIS"])
+
+
+@router.get("/schedule", response_model=list[ScheduleEntryOut])
+def full_schedule(db: Session = Depends(get_db)) -> list[ScheduleEntryOut]:
+    """Horario de todos los laboratorios con docente y numero de inscritos (lo descarga la app).
+    Publico: no incluye datos de estudiantes."""
+    rows = db.execute(select(ScheduleSlot, Lab.code).join(Lab).order_by(Lab.code, ScheduleSlot.day_of_week,
+                                                                           ScheduleSlot.start_minute)).all()
+    return [ScheduleEntryOut(**ScheduleSlotOut.model_validate(slot).model_dump(), lab_code=code) for slot, code in rows]
+
+
+@router.get("/schedule/{slot_id}/students", response_model=list[PersonOut])
+def slot_students(slot_id: int, db: Session = Depends(get_db), _: UserOut = Depends(STAFF)) -> list[Person]:
+    """Estudiantes inscritos (OASIS) en la materia del bloque: base para el control de asistencia."""
+    if db.get(ScheduleSlot, slot_id) is None:
+        raise HTTPException(404, "Bloque de horario no encontrado")
+    q = select(Person).join(SlotStudent, SlotStudent.cedula == Person.cedula).where(SlotStudent.slot_id == slot_id)
+    return list(db.scalars(q.order_by(Person.apellidos, Person.nombres)))
+
+
+@router.get("/people", response_model=list[PersonOut])
+def people(role: str | None = Query(None, pattern="^(DOCENTE|ESTUDIANTE)$"), q: str | None = None,
+           limit: int = Query(200, ge=1, le=2000), db: Session = Depends(get_db),
+           _: UserOut = Depends(MANAGERS)) -> list[Person]:
+    stmt = select(Person).order_by(Person.apellidos, Person.nombres).limit(limit)
+    if role:
+        stmt = stmt.where(Person.role == role)
+    if q:
+        like = f"%{q.upper()}%"
+        stmt = stmt.where((Person.apellidos.ilike(like)) | (Person.nombres.ilike(like)) | (Person.cedula.like(f"%{q}%")))
+    return list(db.scalars(stmt))
+
+
+def _run_out(r: SyncRun) -> SyncRunOut:
+    return SyncRunOut(id=r.id, status=r.status, started_at=r.started_at.isoformat(),
+                      finished_at=r.finished_at.isoformat() if r.finished_at else None,
+                      report=json.loads(r.report) if r.report else {})
+
+
+@router.post("/admin/oasis-sync", response_model=SyncRunOut, status_code=202)
+def start_sync(db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> SyncRunOut:
+    """Sincroniza docentes, estudiantes e inscritos de los bloques de laboratorio desde OASIS (en segundo plano)."""
+    run = SyncRun(status="RUNNING")
+    db.add(run)
+    audit(db, user.username, "OASIS_SYNC", "")
+    db.commit()
+    oasis_sync.start_background(SessionLocal, run.id)
+    return _run_out(run)
+
+
+@router.get("/admin/oasis-sync", response_model=SyncRunOut | None)
+def last_sync(db: Session = Depends(get_db), _: UserOut = Depends(MANAGERS)) -> SyncRunOut | None:
+    r = db.scalar(select(SyncRun).order_by(SyncRun.id.desc()))
+    return _run_out(r) if r else None

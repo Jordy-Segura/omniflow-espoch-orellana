@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.OmniFlow" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#C8102E</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+    </style>
+    <color name="espoch_red">#C8102E</color>
+    <color name="white">#FFFFFF</color>
+</resources>
