@@ -34,19 +34,29 @@ class AuthRepository @Inject constructor(
      * Inicio de sesion (igual que assistant-grades):
      *  1. Cuenta propia en el backend OmniFlow: correo institucional o cedula; clave inicial = cedula.
      *  2. Si el backend no responde: OASIS directo (Seguridad.asmx).
+     *
+     * OASIS directo necesita credenciales de servicio que la app aun no tiene, asi que si el servidor no responde
+     * se informa eso (y no "contraseña incorrecta", que confundia al usuario).
      */
     suspend fun loginInstitutional(username: String, password: String): Result<User> = runCatching {
         val api = sync.api()
-        if (api != null) {
+        val serverProblem: String = if (api == null) {
+            "Configura la dirección del servidor OmniFlow (botón Servidor, abajo)."
+        } else {
             try {
                 return@runCatching saveToken(api.login(LoginDto(username.trim(), password)))
             } catch (e: HttpException) {
                 throw AuthException(errorDetail(e) ?: "Usuario o contraseña incorrectos")
             } catch (_: IOException) {
-                // Servidor fuera de linea: se intenta OASIS directamente.
+                "No se pudo conectar con el servidor OmniFlow (${sync.baseUrl().orEmpty().trimEnd('/')}). " +
+                    "Revisa que el teléfono esté en la misma red o cambia la dirección en el botón Servidor."
             }
         }
-        loginOasis(username, password)
+        try {
+            loginOasis(username, password)
+        } catch (_: Exception) {
+            throw AuthException(serverProblem)
+        }
     }
 
     suspend fun changePassword(current: String, new: String): Result<User> = runCatching {

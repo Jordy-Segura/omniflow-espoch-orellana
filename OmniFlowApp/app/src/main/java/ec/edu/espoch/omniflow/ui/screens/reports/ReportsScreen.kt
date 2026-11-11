@@ -77,6 +77,15 @@ fun ReportsScreen(padding: PaddingValues, vm: ReportsViewModel = hiltViewModel()
             }
         }
         if (r == null) return@LazyColumn
+        if (r.classesRegistered == 0 && r.totalUses == 0 && !r.hasDemoData) {
+            item {
+                InfoBanner(
+                    "Aún no hay datos en este periodo. Los reportes se llenan cuando un teléfono monitorea un laboratorio " +
+                        "con la pestaña Cámara durante las clases.",
+                    color = InkSoft,
+                )
+            }
+        }
         if (r.hasDemoData) {
             item {
                 InfoBanner(

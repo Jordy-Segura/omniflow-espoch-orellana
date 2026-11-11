@@ -1,6 +1,8 @@
 package ec.edu.espoch.omniflow.ui.screens.labs
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -72,7 +74,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 data class LabDetailState(
@@ -124,7 +125,8 @@ private val DAYS = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", 
 fun LabDetailScreen(padding: PaddingValues, onMonitor: () -> Unit, vm: LabDetailViewModel = hiltViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
     val snap = s.snapshot ?: return
-    val time = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val locale = LocalConfiguration.current.locales[0]
+    val time = remember(locale) { SimpleDateFormat("HH:mm", locale) }
 
     LazyColumn(
         Modifier.fillMaxSize(),

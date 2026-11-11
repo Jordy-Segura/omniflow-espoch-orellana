@@ -1,6 +1,8 @@
 package ec.edu.espoch.omniflow.ui.screens.alerts
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -55,7 +57,6 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 enum class AlertFilter { TODAS, SIN_LEER, HOY }
@@ -102,7 +103,8 @@ fun AlertType.tint(): Color = when (this) {
 @Composable
 fun AlertsScreen(padding: PaddingValues, vm: AlertsViewModel = hiltViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
-    val time = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+    val locale = LocalConfiguration.current.locales[0]
+    val time = remember(locale) { SimpleDateFormat("dd/MM HH:mm", locale) }
 
     LazyColumn(
         Modifier.fillMaxSize(),

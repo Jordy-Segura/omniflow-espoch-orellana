@@ -1,6 +1,7 @@
 package ec.edu.espoch.omniflow.ui.screens.monitor
 
 import android.graphics.Bitmap
+import androidx.core.graphics.scale
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -189,7 +190,7 @@ class MonitorViewModel @Inject constructor(
         // En modo asistencia el fotograma llega a 1280 px; el detector de personas trabaja con una copia de 640 px.
         val detectFrame = if (maxOf(bmp.width, bmp.height) > 800) {
             val k = 640f / maxOf(bmp.width, bmp.height)
-            Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt(), (bmp.height * k).toInt(), true)
+            bmp.scale((bmp.width * k).toInt(), (bmp.height * k).toInt())
         } else bmp
         val result = engine.process(detectFrame, s.useGpu, s.minConfidence)
         val occupancy = smoother.add(result.peopleCount)
@@ -253,7 +254,6 @@ class MonitorViewModel @Inject constructor(
 
     override fun onCleared() {
         stop()
-        super.onCleared()
     }
 
     companion object {

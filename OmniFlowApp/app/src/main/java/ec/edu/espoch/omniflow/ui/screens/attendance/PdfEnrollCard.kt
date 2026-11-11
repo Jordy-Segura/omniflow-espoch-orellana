@@ -161,7 +161,7 @@ fun PdfEnrollCard(staff: Boolean, onDone: () -> Unit = {}, vm: PdfEnrollViewMode
                 Row(verticalAlignment = Alignment.Top) {
                     Checkbox(checked = s.consent, onCheckedChange = vm::setConsent)
                     Text(
-                        if (staff) "Confirmo que los ${s.pending.size} estudiante(s) de estos PDF aceptaron: \"$FACE_CONSENT_TEXT\""
+                        if (staff) "Confirmo que los estudiantes de ${if (s.pending.size == 1) "este PDF" else "estos ${s.pending.size} PDF"} de matrícula aceptaron: \"$FACE_CONSENT_TEXT\""
                         else FACE_CONSENT_TEXT,
                         style = MaterialTheme.typography.bodySmall,
                     )

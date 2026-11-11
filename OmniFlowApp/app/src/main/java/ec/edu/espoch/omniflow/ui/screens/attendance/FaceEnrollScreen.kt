@@ -1,6 +1,8 @@
 package ec.edu.espoch.omniflow.ui.screens.attendance
 
 import android.Manifest
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -211,11 +213,14 @@ fun ChangePasswordScreen(vm: ChangePasswordViewModel = hiltViewModel()) {
         Text("Es tu primer ingreso: la contraseña inicial es tu cédula. Elige una nueva de al menos 8 caracteres con letras y números.",
             style = MaterialTheme.typography.bodySmall, color = InkSoft)
         OutlinedTextField(s.current, { v -> vm.update { it.copy(current = v) } }, label = { Text("Contraseña actual (cédula)") },
-            singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+            singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = PASSWORD_KEYS,
+            modifier = Modifier.fillMaxWidth())
         OutlinedTextField(s.new, { v -> vm.update { it.copy(new = v) } }, label = { Text("Nueva contraseña") },
-            singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+            singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = PASSWORD_KEYS,
+            modifier = Modifier.fillMaxWidth())
         OutlinedTextField(s.repeat, { v -> vm.update { it.copy(repeat = v) } }, label = { Text("Repetir nueva contraseña") },
-            singleLine = true, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+            singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = PASSWORD_KEYS,
+            modifier = Modifier.fillMaxWidth())
         s.error?.let { InfoBanner(it) }
         Button(onClick = { vm.save() }, enabled = !s.loading, modifier = Modifier.fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp)) {
             Text("Guardar")
@@ -223,3 +228,6 @@ fun ChangePasswordScreen(vm: ChangePasswordViewModel = hiltViewModel()) {
         OutlinedButton(onClick = { vm.logout() }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Text("Cerrar sesión") }
     }
 }
+
+/** Teclado de contraseña: sin sugerencias ni aprendizaje de lo que se escribe. */
+private val PASSWORD_KEYS = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)

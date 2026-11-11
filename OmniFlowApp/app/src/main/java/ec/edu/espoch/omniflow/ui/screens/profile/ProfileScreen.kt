@@ -1,6 +1,7 @@
 package ec.edu.espoch.omniflow.ui.screens.profile
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -90,11 +91,17 @@ fun ProfileScreen(
                 }
             }
         }
+        // El usuario suele ser un correo largo: va en su propia fila para que no se corte en varias lineas.
+        InfoTile(Icons.Default.Badge, "Usuario", u.username, Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            InfoTile(Icons.Default.Badge, "Usuario", u.username, Modifier.weight(1f))
-            InfoTile(Icons.Default.Info, "Origen", if (u.source == AuthSource.OASIS) "OASIS" else "Demostración", Modifier.weight(1f))
+            val origin = when (u.source) {
+                AuthSource.OMNIFLOW -> "Cuenta OmniFlow"
+                AuthSource.OASIS -> "OASIS"
+                AuthSource.DEMO -> "Demostración"
+            }
+            InfoTile(Icons.Default.Info, "Origen", origin, Modifier.weight(1f))
+            if (u.careerCode != null) InfoTile(Icons.Default.Info, "Carrera", u.careerCode, Modifier.weight(1f))
         }
-        if (u.careerCode != null) InfoTile(Icons.Default.Info, "Código de carrera", u.careerCode, Modifier.fillMaxWidth())
 
         if (u.canMonitor) {
             AppCard(Modifier.fillMaxWidth(), onClick = onOpenSettings) {
@@ -144,7 +151,7 @@ private fun InfoTile(icon: ImageVector, label: String, value: String, modifier: 
             Spacer(Modifier.width(8.dp))
             Column {
                 Text(label, style = MaterialTheme.typography.labelSmall, color = InkSoft)
-                Text(value, style = MaterialTheme.typography.bodyMedium)
+                Text(value, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

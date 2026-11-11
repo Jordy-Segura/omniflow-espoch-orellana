@@ -20,10 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -78,6 +80,18 @@ fun OmniFlowLogo(modifier: Modifier = Modifier, color: Color = EspochRed) {
 fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
     var showPassword by remember { mutableStateOf(false) }
+    var showServer by remember { mutableStateOf(false) }
+
+    if (showServer) {
+        ServerDialog(
+            current = s.serverUrl,
+            message = s.serverMessage,
+            ok = s.serverOk,
+            testing = s.testingServer,
+            onSave = vm::saveServer,
+            onDismiss = { showServer = false; vm.clearServerMessage() },
+        )
+    }
 
     Box(Modifier.fillMaxSize().background(Color.White)) {
         Column(
@@ -191,6 +205,56 @@ fun LoginScreen(vm: LoginViewModel = hiltViewModel()) {
                 color = InkSoft,
                 textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = { showServer = true }) {
+                Icon(Icons.Default.Dns, null, Modifier.size(16.dp), tint = InkSoft)
+                Spacer(Modifier.size(6.dp))
+                Text("Servidor: ${s.serverUrl.removePrefix("http://").removePrefix("https://")}", color = InkSoft,
+                    style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
+}
+
+/** Cambiar la direccion del servidor OmniFlow sin tener que entrar a la app (la IP del servidor puede cambiar). */
+@Composable
+private fun ServerDialog(
+    current: String,
+    message: String?,
+    ok: Boolean,
+    testing: Boolean,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var url by remember { mutableStateOf(current) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Servidor OmniFlow") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Dirección del servidor en la red del laboratorio, por ejemplo http://192.168.1.10:8000",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkSoft,
+                )
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    singleLine = true,
+                    label = { Text("URL del servidor") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (testing) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                message?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = if (ok) Color(0xFF1E8E3E) else EspochRed)
+                }
+            }
+        },
+        confirmButton = {
+            if (ok) TextButton(onClick = onDismiss) { Text("Listo") }
+            else TextButton(onClick = { onSave(url) }, enabled = !testing) { Text("Probar y guardar") }
+        },
+        dismissButton = { if (!ok) TextButton(onClick = onDismiss) { Text("Cancelar") } },
+    )
 }

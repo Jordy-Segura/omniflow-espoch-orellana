@@ -1,10 +1,10 @@
 package ec.edu.espoch.omniflow.update
 
 import android.app.PendingIntent
+import androidx.core.net.toUri
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
@@ -192,8 +192,12 @@ class AppUpdater @Inject constructor(
                 _state.value = UpdateState.NeedsConfirmation(lastRelease, confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
             PackageInstaller.STATUS_SUCCESS -> _state.value = UpdateState.UpToDate
-            PackageInstaller.STATUS_FAILURE_ABORTED -> _state.value =
-                lastRelease?.let { UpdateState.Available(it) } ?: UpdateState.Idle
+            // Antes volvia en silencio a "Actualizar ahora" y el usuario no sabia por que no se instalo.
+            PackageInstaller.STATUS_FAILURE_ABORTED, PackageInstaller.STATUS_FAILURE_BLOCKED -> _state.value =
+                UpdateState.Error(
+                    "La actualización no se instaló: se canceló o la bloqueó Google Play Protect. " +
+                        "Vuelve a intentarlo y, si aparece el aviso, toca \"Más detalles\" → \"Instalar de todas formas\".",
+                )
             PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> _state.value =
                 UpdateState.Error("La actualización está firmada con otra clave. Desinstala la app una vez e instala la nueva versión.")
             else -> _state.value = UpdateState.Error("Android rechazó la actualización: ${message ?: status}")
@@ -207,7 +211,7 @@ class AppUpdater @Inject constructor(
     }
 
     fun unknownSourcesSettingsIntent(): Intent =
-        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:${context.packageName}".toUri())
 
     /** Tras volver de Ajustes de Android con el permiso concedido. */
     suspend fun resumePendingInstall() {
