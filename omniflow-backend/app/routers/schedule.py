@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.auth import MANAGERS, STAFF
+from app.auth import MANAGERS, MANAGERS_REAL, STAFF
 from app.database import SessionLocal, get_db
 from collections import Counter
 
@@ -97,7 +97,7 @@ def _run_out(r: SyncRun) -> SyncRunOut:
 
 
 @router.post("/admin/oasis-sync", response_model=SyncRunOut, status_code=202)
-def start_sync(db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> SyncRunOut:
+def start_sync(db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> SyncRunOut:
     """Sincroniza docentes, estudiantes e inscritos de los bloques de laboratorio desde OASIS (en segundo plano)."""
     run = SyncRun(status="RUNNING")
     db.add(run)

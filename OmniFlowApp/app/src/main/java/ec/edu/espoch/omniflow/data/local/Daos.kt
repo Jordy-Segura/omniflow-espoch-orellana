@@ -175,34 +175,3 @@ interface AlertDao {
     fun observeCountSince(since: Long): Flow<Int>
 }
 
-@Dao
-interface LocalAttendanceDao {
-    @Query("SELECT * FROM local_people WHERE slotId = :slotId ORDER BY apellidos, nombres")
-    fun observePeople(slotId: Long): Flow<List<LocalPersonEntity>>
-
-    @Query("SELECT * FROM local_people WHERE slotId = :slotId ORDER BY apellidos, nombres")
-    suspend fun people(slotId: Long): List<LocalPersonEntity>
-
-    @Query("SELECT slotId, COUNT(*) AS n FROM local_people GROUP BY slotId")
-    suspend fun countsBySlot(): List<SlotCount>
-
-    @Insert
-    suspend fun addPerson(p: LocalPersonEntity): Long
-
-    @Query("DELETE FROM local_people WHERE id = :id")
-    suspend fun deletePerson(id: Long)
-
-    @Query("DELETE FROM local_marks WHERE personId = :id")
-    suspend fun deleteMarksOf(id: Long)
-
-    @Query("SELECT * FROM local_marks WHERE slotId = :slotId AND epochDay = :epochDay")
-    suspend fun marks(slotId: Long, epochDay: Long): List<LocalMarkEntity>
-
-    @Query("SELECT * FROM local_marks WHERE slotId = :slotId")
-    suspend fun allMarks(slotId: Long): List<LocalMarkEntity>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun mark(m: LocalMarkEntity)
-}
-
-data class SlotCount(val slotId: Long, val n: Int)

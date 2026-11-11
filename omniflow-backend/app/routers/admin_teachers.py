@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.auth import MANAGERS
+from app.auth import MANAGERS, MANAGERS_REAL
 from app.database import get_db
 from app.integrations.oasis import format_cedula
 from app.models import AppUser, Lab, Person, ScheduleSlot, SlotStudent, TeacherAssignment
@@ -86,7 +86,7 @@ def list_teachers(db: Session = Depends(get_db), _: UserOut = Depends(MANAGERS))
 
 
 @router.post("", response_model=TeacherOut, status_code=201)
-def create_teacher(body: TeacherIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> TeacherOut:
+def create_teacher(body: TeacherIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> TeacherOut:
     if len(digits(body.cedula)) != 10:
         raise HTTPException(422, "La cédula debe tener 10 dígitos")
     cedula = format_cedula(body.cedula)
@@ -100,7 +100,7 @@ def create_teacher(body: TeacherIn, db: Session = Depends(get_db), user: UserOut
 
 
 @router.put("/{cedula}", response_model=TeacherOut)
-def update_teacher(cedula: str, body: TeacherIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> TeacherOut:
+def update_teacher(cedula: str, body: TeacherIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> TeacherOut:
     cedula = format_cedula(cedula)
     if db.get(Person, cedula) is None:
         raise HTTPException(404, "Docente no encontrado")
@@ -113,7 +113,7 @@ def update_teacher(cedula: str, body: TeacherIn, db: Session = Depends(get_db), 
 
 
 @router.delete("/{cedula}", status_code=204)
-def delete_teacher(cedula: str, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> None:
+def delete_teacher(cedula: str, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> None:
     """Quita las materias y desactiva la cuenta. Un docente creado a mano se elimina por completo."""
     cedula = format_cedula(cedula)
     person = db.get(Person, cedula)

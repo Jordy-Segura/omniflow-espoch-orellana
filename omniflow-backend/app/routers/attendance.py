@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.auth import MANAGERS, STAFF, current_user, decode_token, device_key
+from app.auth import MANAGERS, STAFF, STAFF_REAL, USER_REAL, current_user, decode_token, device_key
 from app.config import get_settings
 from app.database import get_db
 from app.models import AttendanceRecord, FaceTemplate, Lab, Person, ScheduleSlot
@@ -72,7 +72,7 @@ def class_detail(slot_id: int, date: str | None = None, db: Session = Depends(ge
 
 @router.put("/attendance/slot/{slot_id}/students/{cedula}", response_model=AttendanceStudentOut)
 def mark_manual(slot_id: int, cedula: str, body: AttendanceMarkIn, date: str | None = None,
-                db: Session = Depends(get_db), user: UserOut = Depends(STAFF)) -> AttendanceStudentOut:
+                db: Session = Depends(get_db), user: UserOut = Depends(STAFF_REAL)) -> AttendanceStudentOut:
     slot = db.get(ScheduleSlot, slot_id)
     if slot is None:
         raise HTTPException(404, "Clase no encontrada")
@@ -168,7 +168,7 @@ def _target_cedula(body_cedula: str | None, user: UserOut, db: Session) -> str:
 
 
 @router.post("/faces/enroll", response_model=EnrollOut)
-def enroll(body: EnrollIn, db: Session = Depends(get_db), user: UserOut = Depends(current_user)) -> EnrollOut:
+def enroll(body: EnrollIn, db: Session = Depends(get_db), user: UserOut = Depends(USER_REAL)) -> EnrollOut:
     """Registra el rostro (3-5 fotos). Solo se guardan los vectores; las fotos se descartan."""
     if not body.consent:
         raise HTTPException(400, "Se requiere el consentimiento expreso para tratar datos biométricos")
@@ -195,7 +195,7 @@ def enroll(body: EnrollIn, db: Session = Depends(get_db), user: UserOut = Depend
 
 @router.post("/faces/enroll-pdf")
 async def enroll_pdf(request: Request, consent: bool = Query(...), cedula: str | None = None,
-                     db: Session = Depends(get_db), user: UserOut = Depends(current_user)) -> dict:
+                     db: Session = Depends(get_db), user: UserOut = Depends(USER_REAL)) -> dict:
     """PDF de matricula (una o varias paginas): identifica a cada estudiante por cedula/nombre y registra
     la foto de la matricula como plantilla facial. Estudiante: solo su propia matricula. Docente/coordinacion:
     carga masiva (cada persona debio aceptar el consentimiento)."""
@@ -234,7 +234,7 @@ def face_status(cedula: str | None = None, db: Session = Depends(get_db), user: 
 
 
 @router.delete("/faces", status_code=204)
-def face_delete(cedula: str | None = None, db: Session = Depends(get_db), user: UserOut = Depends(current_user)) -> None:
+def face_delete(cedula: str | None = None, db: Session = Depends(get_db), user: UserOut = Depends(USER_REAL)) -> None:
     """Derecho de supresion (LOPDP): el estudiante (o coordinacion) elimina su registro facial."""
     if cedula and user.role not in ("ADMINISTRADOR", "COORDINADOR"):
         cedula = None

@@ -95,7 +95,7 @@ data class LabSnapshot(
 
 enum class AlertType(val title: String, val critical: Boolean) {
     SOBREAFORO("Sobreaforo detectado", true),
-    FUERA_DE_HORARIO("Uso fuera de horario", true),
+    FUERA_DE_HORARIO("Intrusos fuera de horario", true),
     AUSENCIA_DOCENTE("Ausencia de docente", true),
     SALIDA_ANTICIPADA("Salida anticipada", false),
     ANOMALIA_ML("Anomalía de ocupación", true),

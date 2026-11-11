@@ -152,11 +152,11 @@ fun AdminScreen(
                     contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, padding.calculateBottomPadding() + 88.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    if (t == 0) teachersTab(s, query, { query = it }, onEditTeacher) else labsTab(s.demo, labs, onEditLab)
+                    if (t == 0) teachersTab(s, query, { query = it }, onEditTeacher) else labsTab(s.demo, labs) { if (!s.demo) onEditLab(it) }
                 }
             }
         }
-        if (!(tab == 0 && s.demo)) {
+        if (!s.demo) {
             ExtendedFloatingActionButton(
                 onClick = { if (tab == 0) onEditTeacher(null) else onEditLab(null) },
                 icon = { Icon(if (tab == 0) Icons.Default.PersonAdd else Icons.Default.Add, null) },
@@ -175,8 +175,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.teachersTab(
         item {
             EmptyState(
                 Icons.Default.Lock, "Necesitas una cuenta de administrador",
-                "Los docentes reciben un usuario y una contraseña reales en el servidor, por eso esta sección no funciona en el " +
-                    "modo demostración. Inicia sesión con una cuenta de administrador o coordinador.",
+                "Los docentes reciben un usuario y una contraseña reales en el servidor, por eso el modo demostración solo " +
+                    "puede consultar. Inicia sesión con una cuenta de administrador o coordinador.",
             )
         }
         item {
@@ -242,7 +242,7 @@ private fun Tag(text: String, color: Color) {
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.labsTab(demo: Boolean, labs: List<Lab>, onEdit: (Long?) -> Unit) {
-    if (demo) item { InfoBanner("Modo demostración: los cambios en laboratorios quedan solo en este teléfono.", color = StatusAmber) }
+    if (demo) item { InfoBanner("Modo demostración: solo consulta. Inicia sesión como administrador para editar laboratorios.", color = StatusAmber) }
     items(labs, key = { it.id }) { lab ->
         AppCard(Modifier.fillMaxWidth().animateItem(), onClick = { onEdit(lab.id) }) {
             Row(verticalAlignment = Alignment.CenterVertically) {

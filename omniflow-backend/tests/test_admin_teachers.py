@@ -4,7 +4,7 @@ from sqlalchemy import select
 from app import database
 from app.models import AttendanceRecord, ScheduleSlot
 from app.services.teachers import apply_assignments
-from conftest import token_for
+from conftest import real_token, token_for
 from test_attendance import klass  # noqa: F401 - fixture
 
 
@@ -16,7 +16,9 @@ def _body(slot_ids, **kw):
 
 
 def test_coordinator_creates_teacher_with_account_and_subjects(client, klass):  # noqa: F811
-    coord = token_for(client, "COORDINADOR")
+    coord = real_token(client, "COORDINADOR")
+    # El modo demostracion solo consulta: no puede crear cuentas
+    assert client.post("/api/v1/admin/teachers", json=_body([klass]), headers=token_for(client, "COORDINADOR")).status_code == 403
     # Docentes y estudiantes no pueden administrar
     assert client.get("/api/v1/admin/teachers", headers=token_for(client, "DOCENTE")).status_code == 403
     assert client.post("/api/v1/admin/teachers", json=_body([klass], password="corta"), headers=coord).status_code == 422

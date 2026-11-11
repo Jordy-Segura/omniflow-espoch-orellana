@@ -57,6 +57,26 @@ MANAGERS = require_roles("ADMINISTRADOR", "COORDINADOR")
 ADMIN = require_roles("ADMINISTRADOR")
 
 
+def no_demo(user: UserOut) -> UserOut:
+    """El modo demostracion solo consulta: no crea cuentas ni modifica datos reales."""
+    if user.source == "DEMO":
+        raise HTTPException(status.HTTP_403_FORBIDDEN,
+                            "El modo demostración solo permite consultar. Inicia sesión con tu cuenta para hacer cambios.")
+    return user
+
+
+def _real(dep: Callable[..., UserOut]) -> Callable[..., UserOut]:
+    def inner(user: UserOut = Depends(dep)) -> UserOut:
+        return no_demo(user)
+    return inner
+
+
+#: Igual que MANAGERS / STAFF / current_user, pero sin sesiones de demostracion (acciones que cambian datos).
+MANAGERS_REAL = _real(MANAGERS)
+STAFF_REAL = _real(STAFF)
+USER_REAL = _real(current_user)
+
+
 def device_key(x_device_key: str | None = Header(default=None)) -> None:
     """Si DEVICE_API_KEY esta configurada, los telefonos/camaras deben enviarla en X-Device-Key."""
     expected = get_settings().device_api_key

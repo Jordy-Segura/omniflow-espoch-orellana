@@ -32,7 +32,7 @@ class AlertType(str, Enum):
 
 ALERT_TITLES = {
     AlertType.SOBREAFORO: "Sobreaforo detectado",
-    AlertType.FUERA_DE_HORARIO: "Uso fuera de horario",
+    AlertType.FUERA_DE_HORARIO: "Intrusos fuera de horario",
     AlertType.AUSENCIA_DOCENTE: "Ausencia de docente",
     AlertType.SALIDA_ANTICIPADA: "Salida anticipada",
     AlertType.ANOMALIA_ML: "Anomalía de ocupación",
@@ -114,7 +114,8 @@ def evaluate(
     starts_soon = ctx.minutes_to_next is not None and ctx.minutes_to_next <= 10
     if cur is None and occupancy > 0 and not starts_soon:
         out.append(Trigger(AlertType.FUERA_DE_HORARIO,
-                           f"Se detectaron {occupancy} persona(s) sin clase programada en este horario."))
+                           "Hay 1 intruso en el laboratorio: está libre y fuera de horario." if occupancy == 1
+                           else f"Hay {occupancy} intrusos en el laboratorio: está libre y fuera de horario."))
 
     if cur is not None:
         since_start = ctx.minute_of_day - cur.start_minute

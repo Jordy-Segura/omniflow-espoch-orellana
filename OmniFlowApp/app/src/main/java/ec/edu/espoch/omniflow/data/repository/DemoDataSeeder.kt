@@ -34,7 +34,7 @@ class DemoDataSeeder @Inject constructor(
 
     companion object {
         const val DEMO = "DEMO"
-        /** Subirlo obliga a recargar el horario incluido en la app (p. ej. al cambiar de periodo). 4: carreras de la Sede Orellana; 5: base local nueva (personas del modo demostración). */
-        const val SEED_VERSION = 5
+        /** Subirlo obliga a recargar el horario incluido en la app (p. ej. al cambiar de periodo). 4: carreras de la Sede Orellana; 6: modo demostración con los datos de OASIS del servidor. */
+        const val SEED_VERSION = 6
     }
 }

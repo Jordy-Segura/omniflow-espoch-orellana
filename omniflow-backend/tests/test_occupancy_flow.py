@@ -5,7 +5,7 @@ from app import database
 from app.repositories import LabRepository
 from app.services.occupancy_service import OccupancyService
 from app.schemas import OccupancyEventIn
-from conftest import ms, token_for
+from conftest import ms, real_token, token_for
 
 MONDAY = (2026, 11, 9)
 
@@ -118,7 +118,7 @@ def test_weekly_report_and_csv(client, auth):
 
 
 def test_lab_admin_crud(client):
-    admin = token_for(client, "ADMINISTRADOR")
+    admin = real_token(client, "ADMINISTRADOR")
     r = client.post("/api/v1/labs", headers=admin, json={"code": "LAB-FIS", "name": "Laboratorio de Física", "capacity": 20})
     assert r.status_code == 201
     assert client.post("/api/v1/labs", headers=admin, json={"code": "LAB-FIS", "name": "Dup", "capacity": 20}).status_code == 409

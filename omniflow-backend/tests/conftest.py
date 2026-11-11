@@ -51,6 +51,21 @@ def token_for(client: TestClient, role: str = "COORDINADOR", name: str = "Prueba
     return {"Authorization": f"Bearer {r.json()['accessToken']}"}
 
 
+def real_token(client: TestClient, role: str = "COORDINADOR", email: str | None = None) -> dict[str, str]:
+    """Token de una cuenta propia (no de demostracion): necesaria para las acciones que cambian datos."""
+    from app.models import AppUser
+    from app.services.users import hash_password
+    email = email or f"{role.lower()}.real@omniflow.local"
+    with database.SessionLocal() as db:
+        if db.query(AppUser).filter_by(email=email).first() is None:
+            db.add(AppUser(email=email, full_name=role.title(), role=role, password_hash=hash_password("Clave2026x"),
+                           must_change_password=False, source="MANUAL"))
+            db.commit()
+    r = client.post("/api/v1/auth/login", json={"username": email, "password": "Clave2026x"})
+    assert r.status_code == 200, r.text
+    return {"Authorization": f"Bearer {r.json()['accessToken']}"}
+
+
 @pytest.fixture
 def auth(client):
-    return token_for(client)
+    return real_token(client)

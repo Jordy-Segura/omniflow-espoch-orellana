@@ -45,26 +45,6 @@ data class ScheduleEntity(
     )
 }
 
-/** Persona agregada a mano a una clase en el modo demostracion (solo vive en este telefono). */
-@Entity(tableName = "local_people", indices = [Index("slotId")])
-data class LocalPersonEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val slotId: Long,
-    val nombres: String,
-    val apellidos: String,
-    val cedula: String = "",
-    val createdAt: Long = System.currentTimeMillis(),
-)
-
-/** Marca de asistencia de una persona local en una fecha. */
-@Entity(tableName = "local_marks", primaryKeys = ["personId", "epochDay"], indices = [Index(value = ["slotId", "epochDay"])])
-data class LocalMarkEntity(
-    val personId: Long,
-    val epochDay: Long,
-    val slotId: Long,
-    val status: String,
-    val markedAt: Long = System.currentTimeMillis(),
-)
 
 /** Muestra de ocupacion registrada por el modulo de vision (o generada para la demo). */
 @Entity(tableName = "occupancy_events", indices = [Index(value = ["labId", "timestamp"])])

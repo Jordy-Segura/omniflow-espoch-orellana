@@ -10,6 +10,7 @@ import ec.edu.espoch.omniflow.domain.model.Role
 import ec.edu.espoch.omniflow.domain.model.User
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -78,7 +79,7 @@ class AuthRepository @Inject constructor(
             role = runCatching { Role.valueOf(u.role) }.getOrDefault(Role.ESTUDIANTE),
             cedula = u.cedula,
             careerCode = u.careerCode,
-            source = AuthSource.OMNIFLOW,
+            source = if (u.source == "DEMO") AuthSource.DEMO else AuthSource.OMNIFLOW,
             token = t.accessToken,
             mustChangePassword = u.mustChangePassword,
         )
@@ -111,9 +112,16 @@ class AuthRepository @Inject constructor(
         return user
     }
 
-    /** Modo demostracion. No envia nada a la red. */
+    /**
+     * Modo demostracion: sesion de solo consulta en el servidor (horarios y estudiantes reales de OASIS).
+     * Si el servidor no responde, entra igual con el horario incluido en la app.
+     */
     suspend fun loginDemo(name: String, role: Role): User {
         val clean = name.trim().ifBlank { role.label }
+        sync.api()?.let { api ->
+            withTimeoutOrNull(6_000) { runCatching { api.login(LoginDto(clean, demoRole = role.name)) }.getOrNull() }
+                ?.let { return saveToken(it) }
+        }
         val user = User(username = clean.lowercase().replace(" ", "."), fullName = clean, role = role, source = AuthSource.DEMO)
         settings.saveUser(user)
         return user

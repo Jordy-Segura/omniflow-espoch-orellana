@@ -141,7 +141,7 @@ fun AlertType.tint(): Color = when (this) {
 /** Que significa cada alerta y que conviene hacer. */
 fun AlertType.meaning(): String = when (this) {
     AlertType.SOBREAFORO -> "La cámara contó más personas que la capacidad del laboratorio. Puede haber estudiantes de pie o sin equipo."
-    AlertType.FUERA_DE_HORARIO -> "Se detectaron personas en el laboratorio cuando no había ninguna clase programada."
+    AlertType.FUERA_DE_HORARIO -> "La cámara detectó una o más personas en el laboratorio mientras estaba libre, sin ninguna clase programada: posibles intrusos."
     AlertType.AUSENCIA_DOCENTE -> "La clase ya debía haber empezado y la cámara no registró presencia en el laboratorio."
     AlertType.SALIDA_ANTICIPADA -> "El laboratorio quedó vacío antes de la hora de fin de la clase."
     AlertType.ANOMALIA_ML -> "El modelo de aprendizaje automático detectó una ocupación muy distinta a la habitual para esta hora."
@@ -150,7 +150,7 @@ fun AlertType.meaning(): String = when (this) {
 
 fun AlertType.action(): String = when (this) {
     AlertType.SOBREAFORO -> "Verifica que todos tengan equipo y, si es necesario, redistribuye a los estudiantes en otro laboratorio libre."
-    AlertType.FUERA_DE_HORARIO -> "Confirma si el uso está autorizado (tutoría, mantenimiento) o si el laboratorio quedó abierto."
+    AlertType.FUERA_DE_HORARIO -> "Revisa la cámara o acude al laboratorio. Si nadie autorizó el ingreso, avisa a seguridad de la sede."
     AlertType.AUSENCIA_DOCENTE -> "Comunícate con el docente o con la coordinación de la carrera para saber si la clase se dictará."
     AlertType.SALIDA_ANTICIPADA -> "Revisa con el docente si la clase terminó antes por algún motivo y regístralo si corresponde."
     AlertType.ANOMALIA_ML -> "Revisa la cámara del laboratorio: puede ser un evento especial o un problema con el conteo."
@@ -196,7 +196,7 @@ fun AlertsScreen(padding: PaddingValues, onOpenLab: (Long) -> Unit, vm: AlertsVi
             item {
                 EmptyState(
                     Icons.Default.NotificationsNone, "Sin alertas",
-                    "Las alertas aparecen cuando la cámara detecta sobreaforo, uso fuera de horario, ausencias o anomalías.",
+                    "Las alertas aparecen cuando la cámara detecta intrusos fuera de horario, sobreaforo, ausencias o anomalías.",
                 )
             }
         }

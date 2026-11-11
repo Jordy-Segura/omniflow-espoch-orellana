@@ -72,10 +72,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ec.edu.espoch.omniflow.data.remote.api.SubjectDetailDto
-import ec.edu.espoch.omniflow.data.repository.AttendanceRepository
 import ec.edu.espoch.omniflow.data.repository.AuthRepository
 import ec.edu.espoch.omniflow.data.repository.CatalogRepository
-import ec.edu.espoch.omniflow.data.repository.LocalPersonStats
 import ec.edu.espoch.omniflow.data.repository.SubjectRepository
 import ec.edu.espoch.omniflow.domain.model.AuthSource
 import ec.edu.espoch.omniflow.domain.model.Lab
@@ -140,7 +138,6 @@ data class SubjectState(
 class SubjectViewModel @Inject constructor(
     handle: SavedStateHandle,
     private val repo: SubjectRepository,
-    private val attendance: AttendanceRepository,
     auth: AuthRepository,
 ) : ViewModel() {
     private val slotId: Long = checkNotNull(handle.get<Long>("slotId"))
@@ -162,11 +159,6 @@ class SubjectViewModel @Inject constructor(
         val slot = _state.value.slot ?: return@launch
         val user = userFlow.first()
         _state.update { it.copy(user = user, loading = true, error = null) }
-        if (user?.source == AuthSource.DEMO) {
-            val rows = repo.localStats(slot.id).map { it.toRow() }
-            _state.update { it.copy(rows = rows, loading = false) }
-            return@launch
-        }
         repo.remoteDetail(slot)
             .onSuccess { d ->
                 val rows = d.students.map {
@@ -178,21 +170,8 @@ class SubjectViewModel @Inject constructor(
             .onFailure { e -> _state.update { it.copy(loading = false, error = e.message) } }
     }
 
-    fun addPerson(nombres: String, apellidos: String, cedula: String, done: (String?) -> Unit) = viewModelScope.launch {
-        attendance.addLocalPerson(slotId, nombres, apellidos, cedula)
-            .onSuccess { done(null); load() }
-            .onFailure { done(it.message) }
-    }
-
-    fun removePerson(id: Long) = viewModelScope.launch { attendance.removeLocalPerson(id); load() }
-
-    /** Id con el que se abre la lista de asistencia (local en demo, del servidor con cuenta). */
-    fun attendanceSlotId(): Long? = if (_state.value.demo) slotId else _state.value.remote?.id
-
-    private fun LocalPersonStats.toRow() = StudentRow(
-        "L${person.id}", "${person.apellidos} ${person.nombres}".trim(), person.cedula.ifBlank { "Sin cédula" },
-        present = present, late = late, justified = justified, absent = absent, pct = pct, localId = person.id,
-    )
+    /** Id del bloque en el servidor, con el que se abre la lista de asistencia. */
+    fun attendanceSlotId(): Long? = _state.value.remote?.id
 }
 
 @Composable
@@ -201,7 +180,6 @@ fun SubjectScreen(padding: PaddingValues, onTakeAttendance: (Long, String) -> Un
     val slot = s.slot ?: return
     var query by rememberSaveable { mutableStateOf("") }
     var expanded by rememberSaveable { mutableStateOf<String?>(null) }
-    var adding by remember { mutableStateOf(false) }
     val shown = s.rows.filter { query.isBlank() || it.name.contains(query, true) || it.id.contains(query) }
     val today = LocalDate.now()
     val isToday = today.dayOfWeek.value == slot.dayOfWeek
@@ -226,18 +204,12 @@ fun SubjectScreen(padding: PaddingValues, onTakeAttendance: (Long, String) -> Un
             }
         }
         item {
-            SectionTitle(if (s.demo) "Personas de la clase (${s.rows.size})" else "Estudiantes inscritos (${s.rows.size})") {
-                if (s.demo) TextButton(onClick = { adding = true }) {
-                    Icon(Icons.Default.PersonAdd, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Agregar")
-                }
-            }
+            SectionTitle("Estudiantes inscritos según OASIS (${s.rows.size})")
         }
         if (s.demo) {
             item {
-                InfoBanner("Modo demostración: las personas que agregues quedan solo en este teléfono y sirven para practicar la " +
-                    "toma de asistencia sin una cuenta.", color = StatusAmber)
+                InfoBanner("Modo demostración: solo consulta. Los estudiantes y la asistencia son los reales del servidor.",
+                    color = StatusAmber)
             }
         }
         s.error?.let { item { InfoBanner(it) } }
@@ -255,8 +227,7 @@ fun SubjectScreen(padding: PaddingValues, onTakeAttendance: (Long, String) -> Un
         if (!s.loading && s.error == null && s.rows.isEmpty()) {
             item {
                 Text(
-                    if (s.demo) "Aún no hay personas. Toca «Agregar» para sumar estudiantes a esta clase."
-                    else "El servidor no tiene estudiantes inscritos para esta materia.",
+                    "OASIS no tiene estudiantes inscritos para esta materia.",
                     style = MaterialTheme.typography.bodySmall, color = InkSoft,
                 )
             }
@@ -265,17 +236,16 @@ fun SubjectScreen(padding: PaddingValues, onTakeAttendance: (Long, String) -> Un
             StudentCard(
                 row, expanded = expanded == row.key,
                 onClick = { expanded = if (expanded == row.key) null else row.key },
-                onDelete = row.localId?.let { id -> { vm.removePerson(id) } },
+                onDelete = null,
                 modifier = Modifier.animateItem(),
             )
         }
     }
 
-    if (adding) AddPersonDialog(onDismiss = { adding = false }, onSave = vm::addPerson)
 }
 
 private fun SubjectState.attendanceAvailable(isToday: Boolean): Boolean =
-    isToday && (demo || (remote != null && user?.canMonitor == true))
+    isToday && remote != null && user?.canMonitor == true
 
 @Composable
 private fun Header(slot: ScheduleSlot, s: SubjectState) {
@@ -311,7 +281,7 @@ private fun Header(slot: ScheduleSlot, s: SubjectState) {
 private fun InfoGrid(slot: ScheduleSlot, s: SubjectState) {
     val r = s.remote
     val teacher = (r?.teacher ?: slot.teacher).ifBlank { "Sin docente asignado" }
-    val enrolled = if (s.demo) s.rows.size else r?.enrolled ?: slot.enrolled
+    val enrolled = r?.enrolled ?: slot.enrolled
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AppCard(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -336,24 +306,23 @@ private fun InfoGrid(slot: ScheduleSlot, s: SubjectState) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val career = (r?.careerCode ?: slot.careerCode).ifBlank { "—" }
-            val level = (r?.level ?: slot.level).takeIf { it > 0 }?.let { " · nivel $it" }.orEmpty()
+            val level = (r?.level ?: slot.level).takeIf { it > 0 }?.let { " · PAO $it" }.orEmpty()
             Fact(Icons.Default.Badge, "Carrera", career + level, Modifier.weight(1f))
             Fact(Icons.Default.CalendarMonth, "Periodo", r?.periodCode?.ifBlank { null } ?: "Actual", Modifier.weight(1f))
         }
-        if (r != null || s.demo) {
+        if (r != null) {
             AppCard(Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val avg = if (s.demo) s.rows.mapNotNull { it.pct }.takeIf { it.isNotEmpty() }?.average()?.toInt() else r?.avgAttendancePct
+                    val avg = r.avgAttendancePct
                     RingProgress((avg ?: 0) / 100f, size = 70.dp, color = pctColor(avg), center = avg?.let { "$it%" } ?: "—")
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("Asistencia promedio", style = MaterialTheme.typography.titleSmall)
                         Text(
-                            if (s.demo) "Calculada con las marcas guardadas en este teléfono."
-                            else "${r?.sessions ?: 0} clase(s) registrada(s) · ${r?.facesEnrolled ?: 0} con rostro registrado",
+                            "${r.sessions} clase(s) registrada(s) por la cámara · ${r.facesEnrolled} con rostro registrado",
                             style = MaterialTheme.typography.bodySmall, color = InkSoft,
                         )
-                        r?.subjectCode?.takeIf { it.isNotBlank() }?.let {
+                        r.subjectCode.takeIf { it.isNotBlank() }?.let {
                             Text("Código de materia: $it", style = MaterialTheme.typography.labelSmall, color = InkSoft)
                         }
                     }
@@ -453,35 +422,3 @@ private fun Mini(label: String, n: Int, color: Color) {
     }
 }
 
-/** Formulario para agregar una persona a la clase (modo demostracion). */
-@Composable
-fun AddPersonDialog(onDismiss: () -> Unit, onSave: (String, String, String, (String?) -> Unit) -> Unit) {
-    var nombres by remember { mutableStateOf("") }
-    var apellidos by remember { mutableStateOf("") }
-    var cedula by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var saved by remember { mutableStateOf(0) }
-    LaunchedEffect(saved) { if (saved > 0) { nombres = ""; apellidos = ""; cedula = "" } }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.Person, null, tint = EspochRed) },
-        title = { Text("Agregar persona") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(nombres, { nombres = it; error = null }, label = { Text("Nombres") }, singleLine = true,
-                    modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(apellidos, { apellidos = it; error = null }, label = { Text("Apellidos") }, singleLine = true,
-                    modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(cedula, { cedula = it.filter(Char::isDigit).take(10) }, label = { Text("Cédula (opcional)") },
-                    singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                if (saved > 0) Text("$saved persona(s) agregada(s). Puedes seguir agregando.", color = StatusGreen,
-                    style = MaterialTheme.typography.bodySmall)
-                error?.let { Text(it, color = EspochRed, style = MaterialTheme.typography.bodySmall) }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(nombres, apellidos, cedula) { e -> if (e == null) saved++ else error = e } }) { Text("Guardar") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Listo") } },
-    )
-}

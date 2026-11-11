@@ -75,6 +75,7 @@ import ec.edu.espoch.omniflow.data.repository.AuthRepository
 import ec.edu.espoch.omniflow.data.repository.LabRepository
 import ec.edu.espoch.omniflow.data.repository.SettingsRepository
 import ec.edu.espoch.omniflow.domain.model.Alert
+import ec.edu.espoch.omniflow.domain.model.AuthSource
 import ec.edu.espoch.omniflow.domain.model.ClassSession
 import ec.edu.espoch.omniflow.domain.model.LabSnapshot
 import ec.edu.espoch.omniflow.domain.model.ScheduleSlot
@@ -310,7 +311,7 @@ fun LabDetailScreen(
         }
         item {
             SectionTitle("Horario semanal") {
-                if (s.user?.role?.name in listOf("ADMINISTRADOR", "COORDINADOR")) {
+                if (s.user?.role?.name in listOf("ADMINISTRADOR", "COORDINADOR") && s.user?.source != AuthSource.DEMO) {
                     TextButton(onClick = onEditLab) {
                         Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))

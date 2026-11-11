@@ -10,10 +10,8 @@ import androidx.room.RoomDatabase
         OccupancyEventEntity::class,
         ClassSessionEntity::class,
         AlertEntity::class,
-        LocalPersonEntity::class,
-        LocalMarkEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class OmniFlowDatabase : RoomDatabase() {
@@ -22,5 +20,4 @@ abstract class OmniFlowDatabase : RoomDatabase() {
     abstract fun occupancyDao(): OccupancyDao
     abstract fun classSessionDao(): ClassSessionDao
     abstract fun alertDao(): AlertDao
-    abstract fun localAttendanceDao(): LocalAttendanceDao
 }

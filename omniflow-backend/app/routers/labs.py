@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.auth import MANAGERS, current_user
+from app.auth import MANAGERS, MANAGERS_REAL, current_user
 from app.database import get_db
 from app.models import Lab, ScheduleSlot
 from app.repositories import LabRepository, OccupancyRepository, ScheduleRepository, audit
@@ -26,7 +26,7 @@ def list_labs(db: Session = Depends(get_db)) -> list[Lab]:
 
 
 @router.post("", response_model=LabOut, status_code=201)
-def create_lab(body: LabIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> Lab:
+def create_lab(body: LabIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> Lab:
     repo = LabRepository(db)
     if repo.by_code(body.code):
         raise HTTPException(409, "Ya existe un laboratorio con ese código")
@@ -37,7 +37,7 @@ def create_lab(body: LabIn, db: Session = Depends(get_db), user: UserOut = Depen
 
 
 @router.put("/{code}", response_model=LabOut)
-def update_lab(code: str, body: LabIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> Lab:
+def update_lab(code: str, body: LabIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> Lab:
     lab = _lab_or_404(db, code)
     for k, v in body.model_dump(exclude={"code"}).items():
         setattr(lab, k, v)
@@ -63,7 +63,7 @@ def get_schedule(code: str, db: Session = Depends(get_db), _: UserOut = Depends(
 
 
 @router.post("/{code}/schedule", response_model=ScheduleSlotOut, status_code=201)
-def add_slot(code: str, body: ScheduleSlotIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> ScheduleSlot:
+def add_slot(code: str, body: ScheduleSlotIn, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> ScheduleSlot:
     if body.end_minute <= body.start_minute:
         raise HTTPException(422, "La hora de fin debe ser posterior a la de inicio")
     lab = _lab_or_404(db, code)
@@ -78,7 +78,7 @@ def add_slot(code: str, body: ScheduleSlotIn, db: Session = Depends(get_db), use
 
 
 @router.delete("/{code}/schedule/{slot_id}", status_code=204)
-def delete_slot(code: str, slot_id: int, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS)) -> None:
+def delete_slot(code: str, slot_id: int, db: Session = Depends(get_db), user: UserOut = Depends(MANAGERS_REAL)) -> None:
     lab = _lab_or_404(db, code)
     slot = ScheduleRepository(db).get(slot_id)
     if slot is None or slot.lab_id != lab.id:

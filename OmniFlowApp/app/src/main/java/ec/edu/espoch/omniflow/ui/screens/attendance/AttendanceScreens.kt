@@ -28,7 +28,6 @@ import ec.edu.espoch.omniflow.ui.components.AnimatedValueText
 import ec.edu.espoch.omniflow.ui.components.InitialsAvatar
 import ec.edu.espoch.omniflow.ui.components.PulsingDot
 import ec.edu.espoch.omniflow.ui.components.RingProgress
-import ec.edu.espoch.omniflow.ui.screens.subject.AddPersonDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -226,7 +225,7 @@ fun AttendanceClassesScreen(padding: PaddingValues, onOpen: (Long, String) -> Un
             item { HowItWorks(s.demo, howOpen) { howOpen = !howOpen } }
             if (s.demo) {
                 item {
-                    InfoBanner("Modo demostración: toca una clase y agrega personas para practicar. La asistencia se guarda solo en este teléfono.",
+                    InfoBanner("Modo demostración: solo consulta. Ves las clases y los estudiantes reales de OASIS, sin poder modificarlos.",
                         color = StatusAmber)
                 }
             }
@@ -293,15 +292,11 @@ private fun HowItWorks(demo: Boolean, open: Boolean, onToggle: () -> Unit) {
                 Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = InkSoft)
             }
             if (open) {
-                val steps = if (demo) listOf(
-                    "Abre una clase y agrega a las personas que asisten.",
-                    "Marca a cada una como presente, atraso, ausente o justificado.",
-                    "Al terminar la clase, quien no tenga marca queda como ausente.",
-                ) else listOf(
-                    "Cada estudiante registra su rostro una vez (con fotos o con su PDF de matrícula).",
-                    "Durante la clase, la cámara del laboratorio lo reconoce y lo marca como presente o atrasado (10 min).",
-                    "El docente revisa la lista y puede corregir cualquier registro a mano.",
-                    "Al terminar la clase, los inscritos sin registro quedan como ausentes.",
+                val steps = listOf(
+                    "Los estudiantes de cada materia vienen de OASIS: no hay que ingresarlos.",
+                    "Se importa el PDF de matrícula: el sistema identifica al estudiante y guarda su rostro como vector (modelo SFace).",
+                    "Durante la clase, la cámara detecta los rostros (YuNet) y los compara solo con los inscritos de esa materia.",
+                    "Reconocido → presente (o atrasado después de 10 min). Al terminar, quien no fue visto queda ausente.",
                 )
                 steps.forEachIndexed { i, t ->
                     Row(verticalAlignment = Alignment.Top) {
@@ -406,19 +401,9 @@ class AttendanceDetailViewModel @Inject constructor(handle: SavedStateHandle, pr
     fun setFilter(f: StudentFilter) = _state.update { it.copy(filter = f) }
     fun edit(s: AttendanceStudentDto?) = _state.update { it.copy(editing = s) }
 
-    fun mark(student: AttendanceStudentDto, status: String) = viewModelScope.launch {
+    fun justify(student: AttendanceStudentDto) = viewModelScope.launch {
         _state.update { it.copy(editing = null) }
-        repo.mark(slotId, student, date, status).onFailure { e -> _state.update { it.copy(error = e.message) } }
-        load()
-    }
-
-    fun addPerson(nombres: String, apellidos: String, cedula: String, done: (String?) -> Unit) = viewModelScope.launch {
-        repo.addLocalPerson(slotId, nombres, apellidos, cedula).onSuccess { done(null); load() }.onFailure { done(it.message) }
-    }
-
-    fun removePerson(id: Long) = viewModelScope.launch {
-        _state.update { it.copy(editing = null) }
-        repo.removeLocalPerson(id)
+        repo.justify(slotId, student, date).onFailure { e -> _state.update { it.copy(error = e.message) } }
         load()
     }
 }
@@ -430,7 +415,6 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
     val haptic = LocalHapticFeedback.current
     val time = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     var query by rememberSaveable { mutableStateOf("") }
-    var adding by remember { mutableStateOf(false) }
     val shown = d?.students.orEmpty().filter {
         when (s.filter) {
             StudentFilter.TODOS -> true
@@ -479,27 +463,17 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
                         PulsingDot(StatusGreen, 9.dp)
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            if (s.demo) "Clase en curso: marca a cada persona a medida que llega."
-                            else "Clase en curso: la lista se actualiza sola cada 10 s con los rostros que reconoce la cámara" +
+                            "Clase en curso: la lista se actualiza sola cada 10 s con los rostros que reconoce la cámara" +
                                 (d.peopleDetected?.let { " (ahora ve $it persona(s))" } ?: "") + ".",
                             style = MaterialTheme.typography.bodySmall, color = StatusGreen,
                         )
                     }
                 }
             }
-            if (!s.demo && d.facesEnrolled < d.total) {
+            if (d.facesEnrolled < d.total) {
                 item {
-                    InfoBanner("${d.total - d.facesEnrolled} estudiante(s) aún no registran su rostro: la cámara no puede reconocerlos. " +
-                        "Toca un estudiante para registrarlo o corregir su asistencia.", color = StatusAmber)
-                }
-            }
-            if (s.demo) {
-                item {
-                    OutlinedButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-                        Icon(Icons.Default.PersonAdd, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Agregar persona a la clase")
-                    }
+                    InfoBanner("${d.total - d.facesEnrolled} estudiante(s) aún no tienen su rostro registrado: la cámara no puede " +
+                        "reconocerlos. Importa su PDF de matrícula en la pantalla de Asistencia.", color = StatusAmber)
                 }
             }
             item {
@@ -515,26 +489,25 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
             }
             if (d.students.isEmpty()) {
                 item {
-                    Text(if (s.demo) "Todavía no hay personas en esta clase." else "Esta clase no tiene estudiantes inscritos.",
+                    Text("OASIS no tiene estudiantes inscritos en esta clase.",
                         style = MaterialTheme.typography.bodySmall, color = InkSoft)
                 }
             }
         }
         s.error?.let { item { InfoBanner(it) } }
         if (s.loading && d == null) item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { CircularProgressIndicator() } }
-        items(shown, key = { it.localId?.let { id -> "L$id" } ?: it.cedula }) { st ->
+        items(shown, key = { it.cedula }) { st ->
             AppCard(Modifier.fillMaxWidth().animateItem(), onClick = { vm.edit(st) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (st.localId != null) InitialsAvatar("${st.nombres} ${st.apellidos}", size = 32.dp, tint = statusColor(st.status))
-                    else Icon(if (st.faceEnrolled) Icons.Default.Face else Icons.Default.FaceRetouchingOff, null,
+                    Icon(if (st.faceEnrolled) Icons.Default.Face else Icons.Default.FaceRetouchingOff, null,
                         tint = if (st.faceEnrolled) StatusGreen else StatusGrey, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text("${st.apellidos} ${st.nombres}".trim(), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val how = when (st.method) {
                             "ROSTRO" -> "Reconocido ${st.firstSeen?.let { time.format(Date(it)) } ?: ""} · ${(st.confidence * 100).toInt()}%"
-                            "MANUAL" -> "Registro manual" + (st.firstSeen?.let { " · ${time.format(Date(it))}" } ?: "")
-                            else -> if (st.localId != null && st.cedula.startsWith("L")) "Sin cédula" else st.cedula
+                            "MANUAL" -> "Justificado por el docente"
+                            else -> st.cedula + if (st.faceEnrolled) "" else " · sin rostro registrado"
                         }
                         Text(how, style = MaterialTheme.typography.bodySmall, color = InkSoft)
                     }
@@ -547,40 +520,38 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
     }
 
     s.editing?.let { st ->
+        val canJustify = !s.demo && st.status in listOf("AUSENTE", "PENDIENTE")
         AlertDialog(
             onDismissRequest = { vm.edit(null) },
             title = { Text("${st.nombres} ${st.apellidos}".trim()) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Marcar asistencia:", style = MaterialTheme.typography.bodySmall, color = InkSoft)
-                    listOf("PRESENTE", "ATRASO", "AUSENTE", "JUSTIFICADO").forEach { status ->
-                        Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
-                                .background(if (st.status == status) statusColor(status).copy(alpha = 0.12f) else Color.Transparent)
-                                .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.mark(st, status) }
-                                .padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Default.EditNote, null, tint = statusColor(status))
-                            Spacer(Modifier.width(10.dp))
-                            Text(statusLabel(status), color = statusColor(status), fontWeight = FontWeight.SemiBold)
-                        }
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusPill(st.status)
+                    Text("Cédula: ${st.cedula}", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        when (st.method) {
+                            "ROSTRO" -> "Reconocido por la cámara a las ${st.firstSeen?.let { time.format(Date(it)) } ?: "—"} " +
+                                "con ${(st.confidence * 100).toInt()}% de similitud."
+                            "MANUAL" -> "Ausencia justificada por el docente."
+                            else -> "La cámara todavía no lo ha reconocido en esta clase."
+                        },
+                        style = MaterialTheme.typography.bodySmall, color = InkSoft,
+                    )
+                    Text(
+                        if (st.faceEnrolled) "Rostro registrado: la cámara puede reconocerlo."
+                        else "Sin rostro registrado: importa su PDF de matrícula para que la cámara lo reconozca.",
+                        style = MaterialTheme.typography.bodySmall, color = if (st.faceEnrolled) StatusGreen else StatusAmber,
+                    )
                 }
             },
             confirmButton = {
-                if (st.localId != null) {
-                    TextButton(onClick = { vm.removePerson(st.localId) }) { Text("Quitar de la clase", color = EspochRed) }
-                } else {
-                    TextButton(onClick = { vm.edit(null); onEnrollFace(st.cedula, "${st.nombres} ${st.apellidos}".trim()) }) {
-                        Text(if (st.faceEnrolled) "Volver a registrar rostro" else "Registrar rostro")
-                    }
+                if (canJustify) TextButton(onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.justify(st) }) {
+                    Text("Justificar ausencia")
                 }
             },
             dismissButton = { TextButton(onClick = { vm.edit(null) }) { Text("Cerrar") } },
         )
     }
-    if (adding) AddPersonDialog(onDismiss = { adding = false }, onSave = vm::addPerson)
 }
 
 // ============================================================================ estudiante: mi asistencia

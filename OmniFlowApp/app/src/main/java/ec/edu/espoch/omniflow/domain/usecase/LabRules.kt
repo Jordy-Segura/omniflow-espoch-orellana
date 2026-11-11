@@ -84,7 +84,8 @@ object LabRules {
         if (cur == null && occupancy > 0 && !startsSoon) {
             out += Trigger(
                 AlertType.FUERA_DE_HORARIO,
-                "Se detectaron $occupancy persona(s) sin clase programada en este horario.",
+                if (occupancy == 1) "Hay 1 intruso en el laboratorio: está libre y fuera de horario."
+                else "Hay $occupancy intrusos en el laboratorio: está libre y fuera de horario.",
             )
         }
 
