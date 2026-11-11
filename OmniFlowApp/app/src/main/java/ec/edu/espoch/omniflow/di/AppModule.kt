@@ -11,6 +11,7 @@ import ec.edu.espoch.omniflow.BuildConfig
 import ec.edu.espoch.omniflow.data.local.AlertDao
 import ec.edu.espoch.omniflow.data.local.ClassSessionDao
 import ec.edu.espoch.omniflow.data.local.LabDao
+import ec.edu.espoch.omniflow.data.local.LocalAttendanceDao
 import ec.edu.espoch.omniflow.data.local.OccupancyDao
 import ec.edu.espoch.omniflow.data.local.OmniFlowDatabase
 import ec.edu.espoch.omniflow.data.local.ScheduleDao
@@ -35,6 +36,7 @@ object AppModule {
     @Provides fun occupancyDao(db: OmniFlowDatabase): OccupancyDao = db.occupancyDao()
     @Provides fun classSessionDao(db: OmniFlowDatabase): ClassSessionDao = db.classSessionDao()
     @Provides fun alertDao(db: OmniFlowDatabase): AlertDao = db.alertDao()
+    @Provides fun localAttendanceDao(db: OmniFlowDatabase): LocalAttendanceDao = db.localAttendanceDao()
 
     @Provides
     @Singleton

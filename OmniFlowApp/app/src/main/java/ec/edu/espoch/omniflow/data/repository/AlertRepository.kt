@@ -17,6 +17,7 @@ import javax.inject.Singleton
 class AlertRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dao: AlertDao,
+    private val settings: SettingsRepository,
 ) {
     val alerts: Flow<List<Alert>> = dao.observeAll().map { list -> list.map { it.toDomain() } }
     val unreadCount: Flow<Int> = dao.observeUnread()
@@ -41,7 +42,7 @@ class AlertRepository @Inject constructor(
         val id = dao.insert(
             AlertEntity(labId = lab.id, labName = lab.name, type = type.name, message = message, timestamp = now),
         )
-        if (notify) NotificationHelper.show(context, id.toInt(), "${type.title} · ${lab.name}", message)
+        if (notify) NotificationHelper.show(context, id.toInt(), "${type.title} · ${lab.name}", message, settings.alertSound())
         return true
     }
 

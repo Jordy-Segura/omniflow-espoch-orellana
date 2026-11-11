@@ -1,6 +1,9 @@
 package ec.edu.espoch.omniflow.ui.screens.settings
 
 import android.graphics.Bitmap
+import ec.edu.espoch.omniflow.utils.NotificationHelper
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -71,8 +74,17 @@ class SettingsViewModel @Inject constructor(
     private val sync: SyncRepository,
     private val seeder: DemoDataSeeder,
     oasis: OasisSoapClient,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
     val settings: StateFlow<MonitorSettings> = repo.monitor.stateIn(viewModelScope, SharingStarted.Eagerly, MonitorSettings())
+    val alertSound: StateFlow<Boolean> = repo.alertSoundFlow.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAlertSound(v: Boolean) = viewModelScope.launch {
+        repo.setAlertSound(v)
+        if (v) NotificationHelper.playAlertSound(context)
+    }
+
+    fun testAlertSound() = NotificationHelper.playAlertSound(context)
     val oasisConfigured = oasis.hasServiceCredentials
 
     val message = MutableStateFlow<String?>(null)
@@ -120,6 +132,7 @@ fun SettingsScreen(padding: PaddingValues, vm: SettingsViewModel = hiltViewModel
     val s by vm.settings.collectAsStateWithLifecycle()
     val message by vm.message.collectAsStateWithLifecycle()
     val preview by vm.preview.collectAsStateWithLifecycle()
+    val sound by vm.alertSound.collectAsStateWithLifecycle()
     var url by remember { mutableStateOf(s.streamUrl) }
     var apiUrl by remember { mutableStateOf(s.apiUrl) }
     LaunchedEffect(s.streamUrl) { url = s.streamUrl }
@@ -234,13 +247,28 @@ fun SettingsScreen(padding: PaddingValues, vm: SettingsViewModel = hiltViewModel
             }
         }
 
+        SectionTitle("Alertas")
+        AppCard(Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Sonido de alertas", style = MaterialTheme.typography.titleSmall)
+                        Text("Suena un tono y vibra cuando hay sobreaforo, ausencia del docente u otra alerta.",
+                            style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                    }
+                    Switch(checked = sound, onCheckedChange = vm::setAlertSound)
+                }
+                OutlinedButton(onClick = vm::testAlertSound) { Text("Probar sonido") }
+            }
+        }
+
         SectionTitle("Integraciones")
         AppCard(Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("OASIS: conectado (login institucional)", style = MaterialTheme.typography.titleSmall, color = StatusGreen)
                 Text(
                     if (vm.oasisConfigured) "Con credenciales de servicio (local.properties)."
-                    else "Sin credenciales de servicio: OASIS responde igual, como en assistant-grades.",
+                    else "Sin credenciales de servicio: los horarios, docentes y estudiantes se consultan igual.",
                     style = MaterialTheme.typography.bodySmall, color = InkSoft,
                 )
                 OutlinedTextField(

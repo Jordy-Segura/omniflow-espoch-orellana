@@ -19,7 +19,7 @@ def _user_out(u: AppUser) -> UserOut:
 
 @router.post("/login", response_model=TokenOut)
 def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
-    """Inicio de sesion, en este orden (como assistant-grades):
+    """Inicio de sesion, en este orden:
     1. Cuenta propia de OmniFlow (correo institucional o cedula; clave inicial = cedula).
     2. OASIS (Seguridad.asmx), solo si hay credenciales de servicio configuradas.
     3. Modo demostracion (`demoRole`), si esta habilitado."""

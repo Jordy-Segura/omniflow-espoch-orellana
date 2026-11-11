@@ -34,7 +34,7 @@ class OasisException(message: String, cause: Throwable? = null) : IOException(me
  *  - InfoCarrera.asmx -> GetHorarioDocente, GetHorarioEstudiante, GetDatosDocente, ...
  *
  * Se envia la cabecera SOAP <credentials>; el usuario/clave de servicio es OPCIONAL: OASIS responde
- * sin ellos (asi funciona el sistema assistant-grades). Si la DTIC entrega uno, va en local.properties
+ * sin ellos para consultar horarios, docentes y matriculas. Si la DTIC entrega uno, va en local.properties
  * (OASIS_WS_USER / OASIS_WS_PASSWORD).
  *
  * Nota de arquitectura: en produccion estas llamadas las hara el backend OmniFlow (FastAPI);

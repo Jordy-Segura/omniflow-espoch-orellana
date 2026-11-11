@@ -62,6 +62,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         val DEVICE_KEY = stringPreferencesKey("device_key")
         val SEED_VERSION = intPreferencesKey("seed_version")
         val AUTO_UPDATE = booleanPreferencesKey("auto_update")
+        val ALERT_SOUND = booleanPreferencesKey("alert_sound")
     }
 
     val user: Flow<User?> = context.dataStore.data.map { p ->
@@ -122,4 +123,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     /** Descargar e instalar automaticamente las nuevas versiones de la app. */
     val autoUpdate: Flow<Boolean> = context.dataStore.data.map { it[K.AUTO_UPDATE] ?: true }
     suspend fun setAutoUpdate(v: Boolean) = context.dataStore.edit { it[K.AUTO_UPDATE] = v }
+
+    /** Sonido de las alertas (activado por defecto). */
+    val alertSoundFlow: Flow<Boolean> = context.dataStore.data.map { it[K.ALERT_SOUND] ?: true }
+    suspend fun alertSound(): Boolean = alertSoundFlow.first()
+    suspend fun setAlertSound(v: Boolean) = context.dataStore.edit { it[K.ALERT_SOUND] = v }
 }

@@ -7,10 +7,15 @@ Abre esta carpeta en **Android Studio** (AGP 9.3, Kotlin 2.3, compileSdk 37, min
 
 | Módulo | Estado |
 |---|---|
-| Login institucional contra OASIS (`Seguridad.asmx`, sin credenciales de servicio, como assistant-grades) + modo demostración | ✅ |
+| Inicio de sesión con cuentas propias del servidor (correo o cédula) + modo demostración sin cuenta | ✅ |
 | Los 4 laboratorios de cómputo con su horario oficial del período (PDF) y docentes/inscritos de OASIS | ✅ |
 | Actualización automática desde el backend (sin reinstalar la APK a mano) | ✅ |
-| Dashboard, laboratorios, detalle, horario semanal, alertas, reportes, perfil | ✅ |
+| Dashboard, laboratorios, detalle, horario semanal por días, alertas, reportes, perfil | ✅ |
+| Detalle de cada materia: docente, datos académicos, estudiantes inscritos y su asistencia acumulada | ✅ |
+| Detalle de cada alerta (qué significa, qué hacer, clase en ese momento) y sonido propio de alerta | ✅ |
+| Asistencia por clase: en curso, próximas y finalizadas, con resumen del día | ✅ |
+| Modo demostración: agregar personas a una clase y tomar asistencia sin cuenta (solo en el teléfono) | ✅ |
+| Administración (administrador y coordinador): docentes con usuario, contraseña y materias; laboratorios y horario | ✅ |
 | **Cámara del teléfono** como cámara del laboratorio (trasera o frontal) | ✅ |
 | **Otro teléfono por Wi-Fi** como cámara IP temporal (IP Webcam / DroidCam, MJPEG o JPG) | ✅ |
 | Detección de personas on-device (CNN EfficientDet-Lite0, COCO, MediaPipe/TFLite) | ✅ |
@@ -93,7 +98,7 @@ que desinstalar la app una vez porque Android solo instala actualizaciones firma
 ## Credenciales de OASIS
 
 Los servicios de `swoasis.espoch.edu.ec/OASis/OAS_Interop/*.asmx` responden **sin** usuario de servicio
-(la cabecera `<credentials>` va vacía, igual que en assistant-grades), así que el login institucional funciona
+(la cabecera `<credentials>` va vacía), así que el login institucional funciona
 directamente. Si la DTIC entrega un usuario de servicio, agrégalo en `local.properties` (no se sube a git):
 
 ```properties

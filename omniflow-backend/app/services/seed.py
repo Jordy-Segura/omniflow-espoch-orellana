@@ -47,7 +47,8 @@ def seed(db: Session, labs: bool = True, schedule: bool = True, data: dict | Non
         lab = repo.by_code(lab_data["code"]) or repo.add(Lab(
             code=lab_data["code"], name=lab_data["name"], capacity=lab_data.get("capacity", 30),
             building=lab_data.get("building", ""), floor=lab_data.get("floor", "")))
-        lab.building = lab_data.get("building", lab.building)
+        if not lab.building:
+            lab.building = lab_data.get("building", "")
         existing = list(db.scalars(select(ScheduleSlot).where(ScheduleSlot.lab_id == lab.id)))
         for s in existing:  # p. ej. corregir el mapeo de carreras (Sede Orellana) en bases ya creadas
             if s.source == "PDF" and s.group:

@@ -31,7 +31,7 @@ class AuthRepository @Inject constructor(
     val oasisAvailable: Boolean get() = true
 
     /**
-     * Inicio de sesion (igual que assistant-grades):
+     * Inicio de sesion:
      *  1. Cuenta propia en el backend OmniFlow: correo institucional o cedula; clave inicial = cedula.
      *  2. Si el backend no responde: OASIS directo (Seguridad.asmx).
      *

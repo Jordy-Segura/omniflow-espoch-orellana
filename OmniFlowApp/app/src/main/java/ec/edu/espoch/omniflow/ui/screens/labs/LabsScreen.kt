@@ -1,5 +1,6 @@
 package ec.edu.espoch.omniflow.ui.screens.labs
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -90,6 +91,6 @@ fun LabsScreen(padding: PaddingValues, onOpenLab: (Long) -> Unit, vm: LabsViewMo
         if (s.labs.isEmpty()) {
             item { EmptyState(Icons.Default.SearchOff, "Sin resultados", "No hay laboratorios que coincidan con el filtro.") }
         }
-        items(s.labs, key = { it.lab.id }) { LabCard(it) { onOpenLab(it.lab.id) } }
+        items(s.labs, key = { it.lab.id }) { Box(Modifier.animateItem()) { LabCard(it) { onOpenLab(it.lab.id) } } }
     }
 }

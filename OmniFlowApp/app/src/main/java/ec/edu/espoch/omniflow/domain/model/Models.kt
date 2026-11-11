@@ -63,11 +63,18 @@ data class ScheduleSlot(
     val endMinute: Int,
     val enrolled: Int,
     val source: String = "LOCAL",
+    val careerCode: String = "",
+    val level: Int = 0,
+    val remoteId: Long = 0,
 ) {
+    val dayName: String get() = DAY_NAMES.getOrElse(dayOfWeek - 1) { "" }
+
     val timeRange: String get() = "${fmt(startMinute)} - ${fmt(endMinute)}"
 
     companion object {
         fun fmt(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
+        val DAY_NAMES = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+        val DAY_SHORT = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
     }
 }
 

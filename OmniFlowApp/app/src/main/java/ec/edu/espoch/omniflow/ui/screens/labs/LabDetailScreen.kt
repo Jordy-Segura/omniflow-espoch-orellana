@@ -1,6 +1,30 @@
 package ec.edu.espoch.omniflow.ui.screens.labs
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import ec.edu.espoch.omniflow.ui.components.PulsingDot
+import ec.edu.espoch.omniflow.ui.theme.RedSoft
+import java.time.LocalDate
+import java.time.LocalTime
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.layout.Column
@@ -119,11 +143,19 @@ class LabDetailViewModel @Inject constructor(
     }
 }
 
-private val DAYS = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
 
 @Composable
-fun LabDetailScreen(padding: PaddingValues, onMonitor: () -> Unit, vm: LabDetailViewModel = hiltViewModel()) {
+fun LabDetailScreen(
+    padding: PaddingValues,
+    onMonitor: () -> Unit,
+    onOpenSubject: (Long) -> Unit,
+    onEditLab: () -> Unit,
+    vm: LabDetailViewModel = hiltViewModel(),
+) {
     val s by vm.state.collectAsStateWithLifecycle()
+    val today = remember { LocalDate.now().dayOfWeek.value }
+    val nowMinute = remember { LocalTime.now().let { it.hour * 60 + it.minute } }
+    var day by rememberSaveable { mutableIntStateOf(if (today <= 5) today else 1) }
     val snap = s.snapshot ?: return
     val locale = LocalConfiguration.current.locales[0]
     val time = remember(locale) { SimpleDateFormat("HH:mm", locale) }
@@ -276,23 +308,88 @@ fun LabDetailScreen(padding: PaddingValues, onMonitor: () -> Unit, vm: LabDetail
                 }
             }
         }
-        item { SectionTitle("Horario semanal") }
-        if (s.schedule.isEmpty()) {
-            item { Text("No hay clases registradas para este laboratorio.", style = MaterialTheme.typography.bodySmall, color = InkSoft) }
-        }
-        items(s.schedule, key = { it.id }) { slot ->
-            AppCard(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.width(86.dp)) {
-                        Text(DAYS[slot.dayOfWeek - 1], style = MaterialTheme.typography.labelMedium)
-                        Text(slot.timeRange, style = MaterialTheme.typography.labelSmall, color = InkSoft)
-                    }
-                    Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Text(slot.subject, style = MaterialTheme.typography.titleSmall)
-                        Text("${slot.teacher} · ${slot.parallel} · ${slot.enrolled} est.", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+        item {
+            SectionTitle("Horario semanal") {
+                if (s.user?.role?.name in listOf("ADMINISTRADOR", "COORDINADOR")) {
+                    TextButton(onClick = onEditLab) {
+                        Icon(Icons.Default.Edit, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Editar")
                     }
                 }
             }
+        }
+        if (s.schedule.isEmpty()) {
+            item { Text("No hay clases registradas para este laboratorio.", style = MaterialTheme.typography.bodySmall, color = InkSoft) }
+        } else {
+            item {
+                val byDay = s.schedule.groupBy { it.dayOfWeek }
+                val days = (1..7).filter { it <= 5 || byDay.containsKey(it) }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    days.forEach { d ->
+                        val count = byDay[d].orEmpty().size
+                        FilterChip(
+                            selected = day == d,
+                            onClick = { day = d },
+                            label = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(ScheduleSlot.DAY_SHORT[d - 1] + if (d == today) " · hoy" else "", fontWeight = FontWeight.SemiBold)
+                                    Text(if (count == 1) "1 clase" else "$count clases", style = MaterialTheme.typography.labelSmall)
+                                }
+                            },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = EspochRed,
+                                selectedLabelColor = Color.White),
+                        )
+                    }
+                }
+            }
+            item {
+                AnimatedContent(
+                    day,
+                    transitionSpec = {
+                        val dir = if (targetState > initialState) 1 else -1
+                        (slideInHorizontally { it * dir / 3 } + fadeIn()) togetherWith (slideOutHorizontally { -it * dir / 3 } + fadeOut())
+                    },
+                    label = "day",
+                ) { d ->
+                    val slots = s.schedule.filter { it.dayOfWeek == d }.sortedBy { it.startMinute }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(ScheduleSlot.DAY_NAMES[d - 1], style = MaterialTheme.typography.titleSmall, color = InkSoft)
+                        if (slots.isEmpty()) {
+                            AppCard(Modifier.fillMaxWidth()) {
+                                Text("Sin clases este día: el laboratorio está libre.", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                            }
+                        }
+                        slots.forEach { slot -> SlotRow(slot, live = d == today && nowMinute in slot.startMinute until slot.endMinute) { onOpenSubject(slot.id) } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SlotRow(slot: ScheduleSlot, live: Boolean, onClick: () -> Unit) {
+    AppCard(Modifier.fillMaxWidth(), onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(ScheduleSlot.fmt(slot.startMinute), style = MaterialTheme.typography.titleSmall, color = EspochRed)
+                Text(ScheduleSlot.fmt(slot.endMinute), style = MaterialTheme.typography.labelSmall, color = InkSoft)
+            }
+            Box(Modifier.width(3.dp).height(40.dp).clip(RoundedCornerShape(2.dp)).background(if (live) StatusGreen else RedSoft))
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(slot.subject, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f, fill = false),
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (live) {
+                        Spacer(Modifier.width(6.dp))
+                        PulsingDot(StatusGreen, 8.dp)
+                    }
+                }
+                Text(listOf(slot.teacher.ifBlank { "Sin docente" }, slot.parallel, "${slot.enrolled} est.").filter { it.isNotBlank() }
+                    .joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = InkSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Ver materia", tint = InkSoft)
         }
     }
 }

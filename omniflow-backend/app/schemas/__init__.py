@@ -324,3 +324,75 @@ class WeeklyReportOut(ApiModel):
     per_lab: list[LabAttendanceOut]
     late_arrivals: list[LateArrivalOut]
     early_exits: int
+
+
+# ------------------------------------------------------------------ administracion de docentes
+class TeacherSlotOut(ApiModel):
+    id: int
+    lab_code: str
+    subject: str
+    day_of_week: int
+    start_minute: int
+    end_minute: int
+    parallel: str = ""
+
+
+class TeacherOut(ApiModel):
+    cedula: str
+    nombres: str
+    apellidos: str
+    email: str = ""
+    username: str | None = None
+    has_account: bool = False
+    account_active: bool = False
+    must_change_password: bool = False
+    source: str = "OASIS"  # OASIS | MANUAL
+    slots: list[TeacherSlotOut] = []
+
+
+class TeacherIn(ApiModel):
+    cedula: str = Field(min_length=10, max_length=16)
+    nombres: str = Field(min_length=2, max_length=120)
+    apellidos: str = Field(min_length=2, max_length=120)
+    email: str = Field(default="", max_length=160)
+    username: str = Field(min_length=3, max_length=160, pattern=r"^[^\s]+$")
+    password: str | None = Field(default=None, max_length=128)
+    must_change_password: bool = True
+    slot_ids: list[int] = []
+
+
+# ------------------------------------------------------------------ detalle de una materia (bloque)
+class SubjectStudentOut(ApiModel):
+    cedula: str
+    nombres: str
+    apellidos: str
+    email: str = ""
+    face_enrolled: bool = False
+    present: int = 0
+    late: int = 0
+    justified: int = 0
+    absent: int = 0
+    attendance_pct: int | None = None
+
+
+class SubjectDetailOut(ApiModel):
+    id: int
+    lab_code: str
+    lab_name: str
+    subject: str
+    subject_code: str = ""
+    teacher: str = ""
+    teacher_email: str = ""
+    parallel: str = ""
+    career_code: str = ""
+    level: int = 0
+    group: str = ""
+    period_code: str = ""
+    day_of_week: int
+    start_minute: int
+    end_minute: int
+    enrolled: int = 0
+    sessions: int = 0
+    faces_enrolled: int = 0
+    avg_attendance_pct: int | None = None
+    students: list[SubjectStudentOut] = []

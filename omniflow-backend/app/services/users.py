@@ -1,7 +1,7 @@
-"""Cuentas propias (login sin credenciales de servicio de OASIS), como en assistant-grades.
+"""Cuentas propias de OmniFlow (login sin credenciales de servicio de OASIS).
 
-Hash: scrypt N=16384, r=8, p=1, 64 bytes, formato `scrypt$<salt_hex>$<hash_hex>` — el mismo que usa
-assistant-grades (Node `crypto.scryptSync`), asi las cuentas son portables entre ambos sistemas.
+Hash: scrypt N=16384, r=8, p=1, 64 bytes, formato `scrypt$<salt_hex>$<hash_hex>` (compatible con
+`crypto.scryptSync` de Node).
 """
 from __future__ import annotations
 

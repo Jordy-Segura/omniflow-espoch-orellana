@@ -1,6 +1,8 @@
 package ec.edu.espoch.omniflow.ui.screens.profile
 
 import androidx.compose.foundation.layout.Arrangement
+import ec.edu.espoch.omniflow.domain.model.Role
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -63,6 +65,7 @@ class ProfileViewModel @Inject constructor(private val auth: AuthRepository) : V
 fun ProfileScreen(
     padding: PaddingValues,
     onOpenSettings: () -> Unit,
+    onOpenAdmin: () -> Unit,
     vm: ProfileViewModel = hiltViewModel(),
     updates: UpdateViewModel = hiltViewModel(),
 ) {
@@ -101,6 +104,20 @@ fun ProfileScreen(
             }
             InfoTile(Icons.Default.Info, "Origen", origin, Modifier.weight(1f))
             if (u.careerCode != null) InfoTile(Icons.Default.Info, "Carrera", u.careerCode, Modifier.weight(1f))
+        }
+
+        if (u.role == Role.ADMINISTRADOR || u.role == Role.COORDINADOR) {
+            AppCard(Modifier.fillMaxWidth(), onClick = onOpenAdmin) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconBadge(Icons.Default.AdminPanelSettings)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Administración", style = MaterialTheme.typography.titleSmall)
+                        Text("Docentes, cuentas, materias asignadas y laboratorios", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                    }
+                    Icon(Icons.Default.ChevronRight, null, tint = InkSoft)
+                }
+            }
         }
 
         if (u.canMonitor) {

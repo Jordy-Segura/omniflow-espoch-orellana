@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Formato de `assets/lab_schedule.json`: horario oficial de los 3 laboratorios (PDF P0046 + OASIS). */
+/** Formato de `assets/lab_schedule.json`: horario oficial de los laboratorios (PDF del periodo + OASIS). */
 @Serializable
 data class CatalogFile(
     val period: String = "",
@@ -43,6 +43,7 @@ data class CatalogSlot(
     val enrolled: Int = 0,
     val careerCode: String = "",
     val level: Int = 0,
+    val remoteId: Long = 0,
 )
 
 /**
@@ -70,7 +71,7 @@ class CatalogRepository @Inject constructor(
             labs.map { lab ->
                 lab.copy(slots = byLab[lab.code].orEmpty().map {
                     CatalogSlot(prettySubject(it.subject), it.teacher, it.parallel, it.dayOfWeek, it.startMinute,
-                        it.endMinute, it.enrolled, it.careerCode, it.level)
+                        it.endMinute, it.enrolled, it.careerCode, it.level, it.id)
                 })
             },
             source = "BACKEND",
@@ -93,7 +94,7 @@ class CatalogRepository @Inject constructor(
                 ScheduleEntity(
                     labId = labId, subject = it.subject, teacher = it.teacher, parallel = it.parallel,
                     dayOfWeek = it.dayOfWeek, startMinute = it.startMinute, endMinute = it.endMinute,
-                    enrolled = it.enrolled, source = source, careerCode = it.careerCode, level = it.level,
+                    enrolled = it.enrolled, source = source, careerCode = it.careerCode, level = it.level, remoteId = it.remoteId,
                 )
             })
         }

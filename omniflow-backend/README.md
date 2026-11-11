@@ -45,19 +45,19 @@ Pruebas: `pytest` (42 pruebas; la de YOLOv8 real se omite si no instalaste `requ
 > sin registro → AUSENTE. El docente corrige con `PUT /api/v1/attendance/slot/{id}/students/{cedula}`.
 > Registro facial con consentimiento: `POST /api/v1/faces/enroll` (solo se guardan vectores) y `DELETE /api/v1/faces`.
 >
-> **Cuentas propias (como assistant-grades):** al sincronizar OASIS se crea una cuenta por docente y estudiante
+> **Cuentas propias:** al sincronizar OASIS se crea una cuenta por docente y estudiante
 > (usuario = correo institucional o cédula, clave inicial = cédula sin guion, cambio obligatorio al ingresar).
 > OASIS solo se usa para el login si hay credenciales de servicio. Roles extra: `ADMIN_USERS`, `COORDINATOR_USERS`.
 
 - **Laboratorios y horario**: los 4 laboratorios de cómputo y sus 57 bloques salen del PDF oficial del período
   (`app/data/horario_laboratorios_P0046.json`, transcrito de *Anexo 3_Horario_Laboratorio_Computacion_sep26-feb27_v7.pdf*).
-  Carreras: TI (Tecnologías de la Información), IAMB (Ing. Ambiental), AGR (Agronomía) y ZOO (Zootecnia),
-  según el prefijo del grupo del PDF (TI03, AMBI01, AGRO03, ZOOT05).
-- **Docentes, estudiantes e inscritos**: se traen de **OASIS** al arrancar (y con `POST /api/v1/admin/oasis-sync`),
-  igual que hace *assistant-grades*:
+  Carreras de la ESPOCH Sede Orellana: ITIO (Tecnologías de la Información), IAMBENA (Ing. Ambiental),
+  IAGRENA (Agronomía) e IZOOENA (Zootecnia), según el prefijo del grupo del PDF (TI03, AMBI01, AGRO03, ZOOT05).
+- **Docentes, estudiantes e inscritos**: se traen de **OASIS** al arrancar (y con `POST /api/v1/admin/oasis-sync`):
   malla de la carrera → materia de cada bloque → docente (horario del período `GetHorariosDocente`, o el del PDF
-  si viene escrito) → paralelo → alumnos de esa materia (`GetAlumnosMateria`). Resultado en el período P0046:
-  57/57 bloques con docente, 43 docentes, 469 estudiantes.
+  si viene escrito) → paralelo → alumnos de esa materia (`GetAlumnosMateria`).
+- **Docentes asignados a mano**: el administrador o coordinador puede crear docentes desde la app (usuario,
+  contraseña y materias). Esa asignación prevalece sobre OASIS y, si se quita, el bloque vuelve al docente anterior.
 - OASIS **no exige** credenciales de servicio para estas consultas; si la DTIC las entrega se usan igual.
 - El reporte de la última sincronización (`GET /api/v1/admin/oasis-sync`) lista por bloque el docente elegido,
   de dónde salió y las diferencias encontradas (p. ej. el PDF nombra a *Paguay Soxo Paul Xavier* en
@@ -86,6 +86,15 @@ En la app: **Perfil → Ajustes de cámara e IA → URL del backend OmniFlow** y
 La app envía sus lecturas cada minuto a `POST /api/v1/occupancy-events/batch`. El endpoint es idempotente
 (reenviar el mismo lote no duplica datos) y responde `{"accepted": n, "duplicates": n, "rejected": n}`.
 
+## Primera cuenta de administrador
+
+La administración (docentes, cuentas y laboratorios) necesita una cuenta de administrador o coordinador.
+Para crearla, en la carpeta `omniflow-backend` ejecuta (la contraseña se escribe sin mostrarse):
+
+```bash
+.venv/Scripts/python -m app.crear_admin
+```
+
 ## Endpoints principales (`/api/v1`)
 
 | Método | Ruta | Acceso |
@@ -100,8 +109,10 @@ La app envía sus lecturas cada minuto a `POST /api/v1/occupancy-events/batch`. 
 | GET/POST | `/alerts`, `/alerts/{id}/read`, `/alerts/read-all` | token |
 | GET | `/reports/weekly?days=7` · `/reports/occupancy.csv` | docente/coordinador/admin |
 | GET/POST/DELETE | `/cameras`, `/cameras/{id}/start`, `/stop`, `/status`, `/snapshot.jpg` | coordinador/admin |
-| GET | `/schedule` horario de los 4 laboratorios con docente e inscritos (lo usa la app) | público |
+| GET | `/schedule` horario de los laboratorios con id, docente e inscritos (lo usa la app) | público |
 | GET | `/schedule/{id}/students` lista de clase (OASIS) | docente/coordinador/admin |
+| GET | `/schedule/{id}/detail` materia: datos, estudiantes y asistencia acumulada | docente de la materia/coordinador/admin |
+| GET/POST/PUT/DELETE | `/admin/teachers` docentes: usuario, contraseña y materias asignadas | coordinador/admin |
 | GET | `/people?role=DOCENTE\|ESTUDIANTE` | coordinador/admin |
 | POST/GET | `/admin/oasis-sync` sincronizar con OASIS / ver el último reporte | coordinador/admin |
 | GET | `/app/latest`, `/app/download/{archivo}` · PUT `/app/releases` (`X-Release-Key`) | público / clave |
@@ -140,7 +151,7 @@ Mismos algoritmos que la app (para que teléfono y servidor coincidan):
 ## OASIS
 
 Los servicios `http://swoasis.espoch.edu.ec/OASis/OAS_Interop/{Seguridad,InfoGeneral,InfoCarrera}.asmx`
-responden sin usuario de servicio (la cabecera `<credentials>` va vacía), igual que en *assistant-grades*.
+responden sin usuario de servicio (la cabecera `<credentials>` va vacía).
 Si la DTIC entrega uno, configúralo en `OASIS_WS_USER` / `OASIS_WS_PASSWORD`. Un usuario inexistente hace que
 OASIS responda "Referencia a objeto no establecida…", que la API traduce a *usuario o contraseña incorrectos*.
 El modo demostración (`{"username":"Ana","demoRole":"DOCENTE"}`) debe desactivarse en producción

@@ -89,6 +89,24 @@ class Person(Base):
         return f"{self.apellidos} {self.nombres}".strip()
 
 
+class TeacherAssignment(Base):
+    """Docente asignado a un bloque por un administrador o coordinador.
+
+    Prevalece sobre lo que resuelva la sincronizacion con OASIS (se vuelve a aplicar al final de cada sincronizacion).
+    """
+
+    __tablename__ = "teacher_assignments"
+
+    slot_id: Mapped[int] = mapped_column(ForeignKey("schedule_slots.id", ondelete="CASCADE"), primary_key=True)
+    cedula: Mapped[str] = mapped_column(ForeignKey("people.cedula", ondelete="CASCADE"), index=True)
+    assigned_by: Mapped[str] = mapped_column(String(160), default="")
+    # Docente que tenia el bloque antes de la asignacion (se restaura si se quita).
+    prev_teacher: Mapped[str] = mapped_column(String(160), default="")
+    prev_cedula: Mapped[str] = mapped_column(String(16), default="")
+    prev_email: Mapped[str] = mapped_column(String(120), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class SlotStudent(Base):
     """Estudiantes inscritos (segun OASIS) en la materia/paralelo de un bloque de laboratorio."""
 
@@ -169,7 +187,7 @@ class Camera(Base):
 
 
 class AppUser(Base):
-    """Cuenta propia de OmniFlow (igual que assistant-grades: login sin depender de credenciales de OASIS).
+    """Cuenta propia de OmniFlow (login sin depender de credenciales de servicio de OASIS).
 
     Docentes y estudiantes se crean desde la sincronizacion con OASIS con clave inicial = cedula (solo digitos)
     y deben cambiarla en el primer ingreso.

@@ -37,9 +37,34 @@ data class ScheduleEntity(
     /** Carrera (TI, IAMB) y nivel segun OASIS */
     val careerCode: String = "",
     val level: Int = 0,
+    /** Id del bloque en el servidor (0 = aun no se conoce). */
+    val remoteId: Long = 0,
 ) {
-    fun toDomain() = ScheduleSlot(id, labId, subject, teacher, parallel, dayOfWeek, startMinute, endMinute, enrolled, source)
+    fun toDomain() = ScheduleSlot(
+        id, labId, subject, teacher, parallel, dayOfWeek, startMinute, endMinute, enrolled, source, careerCode, level, remoteId,
+    )
 }
+
+/** Persona agregada a mano a una clase en el modo demostracion (solo vive en este telefono). */
+@Entity(tableName = "local_people", indices = [Index("slotId")])
+data class LocalPersonEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val slotId: Long,
+    val nombres: String,
+    val apellidos: String,
+    val cedula: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+)
+
+/** Marca de asistencia de una persona local en una fecha. */
+@Entity(tableName = "local_marks", primaryKeys = ["personId", "epochDay"], indices = [Index(value = ["slotId", "epochDay"])])
+data class LocalMarkEntity(
+    val personId: Long,
+    val epochDay: Long,
+    val slotId: Long,
+    val status: String,
+    val markedAt: Long = System.currentTimeMillis(),
+)
 
 /** Muestra de ocupacion registrada por el modulo de vision (o generada para la demo). */
 @Entity(tableName = "occupancy_events", indices = [Index(value = ["labId", "timestamp"])])

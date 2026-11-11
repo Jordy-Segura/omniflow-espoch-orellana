@@ -111,7 +111,7 @@ class OasisClient:
 
     def call(self, service: str, method: str, params: list[tuple[str, str]]) -> ET.Element:
         # Las credenciales de servicio son opcionales: OASIS responde InfoGeneral/InfoCarrera sin ellas
-        # (igual que el proyecto assistant-grades). Si existen, se envian en la cabecera.
+        # Si existen, se envian en la cabecera.
         try:
             resp = self._http.post(
                 f"{self.base}/{service}.asmx",

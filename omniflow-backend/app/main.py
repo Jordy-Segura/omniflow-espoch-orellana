@@ -11,7 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import database
 from app.config import get_settings
 from app.database import Base
-from app.routers import alerts, app_updates, attendance, auth, cameras, health, labs, occupancy, reports, schedule, ws
+from app.routers import (admin_teachers, alerts, app_updates, attendance, auth, cameras, health, labs, occupancy,
+                         reports, schedule, ws)
 from app.services.seed import seed
 from app.vision import vision_manager
 from app.websocket import manager
@@ -66,7 +67,8 @@ def create_app() -> FastAPI:
     origins = [o.strip() for o in s.cors_origins.split(",") if o.strip()]
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["*"], allow_headers=["*"],
                        allow_credentials="*" not in origins)
-    for r in (health, auth, labs, schedule, attendance, occupancy, alerts, reports, cameras, app_updates, ws):
+    for r in (health, auth, labs, schedule, attendance, occupancy, alerts, reports, cameras, app_updates, ws,
+              admin_teachers):
         app.include_router(r.router)
     return app
 

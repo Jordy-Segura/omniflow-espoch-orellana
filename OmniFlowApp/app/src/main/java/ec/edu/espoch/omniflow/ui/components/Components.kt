@@ -1,6 +1,23 @@
 package ec.edu.espoch.omniflow.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,12 +113,17 @@ fun OmniTopBar(
 
 @Composable
 fun AppCard(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, content: @Composable () -> Unit) {
+    // Al tocar, la tarjeta se hunde un poco: da sensacion de respuesta en toda la app.
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed && onClick != null) 0.97f else 1f, spring(stiffness = Spring.StiffnessMedium), label = "press")
     Box(
         modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
             .border(1.dp, Line, RoundedCornerShape(16.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(interactionSource = interaction, indication = ripple(), onClick = onClick) else Modifier)
             .padding(14.dp),
     ) { content() }
 }
@@ -145,7 +167,7 @@ fun StatCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, contentDescription = null, tint = EspochRed, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(value, style = MaterialTheme.typography.titleLarge)
+                AnimatedValueText(value, style = MaterialTheme.typography.titleLarge)
             }
             Spacer(Modifier.height(4.dp))
             Text(label, style = MaterialTheme.typography.labelMedium)
@@ -153,8 +175,9 @@ fun StatCard(
             if (progress != null) {
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val animated by animateFloatAsState(progress.coerceIn(0f, 1f), tween(700), label = "stat")
                     LinearProgressIndicator(
-                        progress = { progress.coerceIn(0f, 1f) },
+                        progress = { animated },
                         modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
                         color = progressColor,
                         trackColor = progressColor.copy(alpha = 0.15f),
@@ -305,5 +328,52 @@ fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifie
         Spacer(Modifier.height(4.dp))
         Text(body, style = MaterialTheme.typography.bodySmall, color = InkSoft,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
+}
+
+/** Texto que anima el numero inicial (p. ej. "12", "75%") cada vez que cambia. */
+@Composable
+fun AnimatedValueText(value: String, style: TextStyle, color: Color = Color.Unspecified, fontWeight: FontWeight? = null) {
+    val m = Regex("""^(\d+)(.*)$""").find(value)
+    if (m == null) {
+        Text(value, style = style, color = color, fontWeight = fontWeight)
+        return
+    }
+    val target = m.groupValues[1].toIntOrNull() ?: 0
+    val n by animateIntAsState(target, tween(600), label = "count")
+    Text("$n${m.groupValues[2]}", style = style, color = color, fontWeight = fontWeight)
+}
+
+/** Anillo de porcentaje animado con el valor al centro. */
+@Composable
+fun RingProgress(fraction: Float, modifier: Modifier = Modifier, size: Dp = 64.dp, color: Color = StatusGreen,
+                 track: Color = RedSoft, center: String? = null) {
+    val f by animateFloatAsState(fraction.coerceIn(0f, 1f), tween(900), label = "ring")
+    Box(modifier.size(size), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.size(size)) {
+            val stroke = size.toPx() * 0.12f
+            val inset = stroke / 2
+            val arc = Size(this.size.width - stroke, this.size.height - stroke)
+            drawArc(track, -90f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
+            drawArc(color, -90f, 360f * f, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
+        }
+        Text(center ?: "${(f * 100).toInt()}%", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+    }
+}
+
+/** Punto que late: indica algo "en vivo". */
+@Composable
+fun PulsingDot(color: Color = StatusGreen, size: Dp = 10.dp) {
+    val t = rememberInfiniteTransition(label = "pulse")
+    val a by t.animateFloat(0.35f, 1f, infiniteRepeatable(tween(800), RepeatMode.Reverse), label = "alpha")
+    Box(Modifier.size(size).graphicsLayer { alpha = a }.clip(CircleShape).background(color))
+}
+
+/** Circulo con las iniciales de una persona. */
+@Composable
+fun InitialsAvatar(name: String, modifier: Modifier = Modifier, size: Dp = 40.dp, tint: Color = EspochRed) {
+    val initials = name.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.take(1) }.uppercase()
+    Box(modifier.size(size).clip(CircleShape).background(tint.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
+        Text(initials, color = tint, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
     }
 }

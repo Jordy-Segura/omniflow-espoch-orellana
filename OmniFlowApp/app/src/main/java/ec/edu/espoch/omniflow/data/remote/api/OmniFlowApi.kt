@@ -33,7 +33,7 @@ interface OmniFlowApi {
     @GET("api/v1/app/latest")
     suspend fun latestRelease(): AppReleaseDto
 
-    // ------------------------------------------------------------- cuentas (como assistant-grades)
+    // ------------------------------------------------------------- cuentas propias
     @POST("api/v1/auth/login")
     suspend fun login(@Body body: LoginDto): TokenDto
 
@@ -89,6 +89,35 @@ interface OmniFlowApi {
 
     @DELETE("api/v1/faces")
     suspend fun deleteFace(@Header("Authorization") auth: String)
+
+    // ------------------------------------------------------------- materia (bloque de horario)
+    @GET("api/v1/schedule/{id}/detail")
+    suspend fun subjectDetail(@Header("Authorization") auth: String, @Path("id") slotId: Long): SubjectDetailDto
+
+    // ------------------------------------------------------------- administracion (administrador y coordinador)
+    @GET("api/v1/admin/teachers")
+    suspend fun teachers(@Header("Authorization") auth: String): List<TeacherDto>
+
+    @POST("api/v1/admin/teachers")
+    suspend fun createTeacher(@Header("Authorization") auth: String, @Body body: TeacherInDto): TeacherDto
+
+    @PUT("api/v1/admin/teachers/{cedula}")
+    suspend fun updateTeacher(@Header("Authorization") auth: String, @Path("cedula") cedula: String, @Body body: TeacherInDto): TeacherDto
+
+    @DELETE("api/v1/admin/teachers/{cedula}")
+    suspend fun deleteTeacher(@Header("Authorization") auth: String, @Path("cedula") cedula: String)
+
+    @POST("api/v1/labs")
+    suspend fun createLab(@Header("Authorization") auth: String, @Body body: LabDto): LabDto
+
+    @PUT("api/v1/labs/{code}")
+    suspend fun updateLab(@Header("Authorization") auth: String, @Path("code") code: String, @Body body: LabDto): LabDto
+
+    @POST("api/v1/labs/{code}/schedule")
+    suspend fun addSlot(@Header("Authorization") auth: String, @Path("code") code: String, @Body body: SlotInDto): ScheduleEntryDto
+
+    @DELETE("api/v1/labs/{code}/schedule/{id}")
+    suspend fun deleteSlot(@Header("Authorization") auth: String, @Path("code") code: String, @Path("id") slotId: Long)
 }
 
 @Serializable
@@ -123,6 +152,8 @@ data class AttendanceStudentDto(
     val firstSeen: Long? = null,
     val confidence: Double = 0.0,
     val faceEnrolled: Boolean = false,
+    /** Persona agregada solo en este telefono (modo demostracion). */
+    val localId: Long? = null,
 )
 
 @Serializable
@@ -215,7 +246,9 @@ data class FaceStatusDto(val cedula: String, val templates: Int, val consentAt: 
 
 @Serializable
 data class ScheduleEntryDto(
-    val labCode: String,
+    /** Id del bloque en el servidor (para abrir el detalle de la materia). */
+    val id: Long = 0,
+    val labCode: String = "",
     val subject: String,
     val teacher: String = "",
     val parallel: String = "",
@@ -262,4 +295,92 @@ data class LabDto(
     val building: String = "",
     val floor: String = "",
     val capacity: Int = 0,
+)
+
+@Serializable
+data class SlotInDto(
+    val subject: String,
+    val teacher: String = "",
+    val parallel: String = "",
+    val dayOfWeek: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val enrolled: Int = 0,
+)
+
+@Serializable
+data class SubjectStudentDto(
+    val cedula: String,
+    val nombres: String,
+    val apellidos: String,
+    val email: String = "",
+    val faceEnrolled: Boolean = false,
+    val present: Int = 0,
+    val late: Int = 0,
+    val justified: Int = 0,
+    val absent: Int = 0,
+    val attendancePct: Int? = null,
+)
+
+@Serializable
+data class SubjectDetailDto(
+    val id: Long,
+    val labCode: String,
+    val labName: String = "",
+    val subject: String,
+    val subjectCode: String = "",
+    val teacher: String = "",
+    val teacherEmail: String = "",
+    val parallel: String = "",
+    val careerCode: String = "",
+    val level: Int = 0,
+    val group: String = "",
+    val periodCode: String = "",
+    val dayOfWeek: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val enrolled: Int = 0,
+    val sessions: Int = 0,
+    val facesEnrolled: Int = 0,
+    val avgAttendancePct: Int? = null,
+    val students: List<SubjectStudentDto> = emptyList(),
+)
+
+@Serializable
+data class TeacherSlotDto(
+    val id: Long,
+    val labCode: String = "",
+    val subject: String,
+    val dayOfWeek: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val parallel: String = "",
+)
+
+@Serializable
+data class TeacherDto(
+    val cedula: String,
+    val nombres: String,
+    val apellidos: String,
+    val email: String = "",
+    val username: String? = null,
+    val hasAccount: Boolean = false,
+    val accountActive: Boolean = false,
+    val mustChangePassword: Boolean = false,
+    val source: String = "OASIS",
+    val slots: List<TeacherSlotDto> = emptyList(),
+) {
+    val fullName: String get() = "$nombres $apellidos".trim()
+}
+
+@Serializable
+data class TeacherInDto(
+    val cedula: String,
+    val nombres: String,
+    val apellidos: String,
+    val email: String = "",
+    val username: String,
+    val password: String? = null,
+    val mustChangePassword: Boolean = true,
+    val slotIds: List<Long> = emptyList(),
 )

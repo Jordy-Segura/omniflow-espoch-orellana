@@ -1,6 +1,15 @@
 package ec.edu.espoch.omniflow.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import ec.edu.espoch.omniflow.ui.screens.admin.AdminScreen
+import ec.edu.espoch.omniflow.ui.screens.admin.LabFormScreen
+import ec.edu.espoch.omniflow.ui.screens.admin.TeacherFormScreen
+import ec.edu.espoch.omniflow.ui.screens.subject.SubjectScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
@@ -82,6 +91,13 @@ object Routes {
     const val ATTENDANCE_DETAIL = "attendance/{slotId}/{date}"
     const val MY_ATTENDANCE = "my-attendance"
     const val FACE_ENROLL = "face-enroll?cedula={cedula}&name={name}"
+    const val SUBJECT = "subject/{slotId}"
+    const val ADMIN = "admin"
+    const val ADMIN_TEACHER = "admin/teacher?cedula={cedula}"
+    const val ADMIN_LAB = "admin/lab?labId={labId}"
+    fun subject(slotId: Long) = "subject/$slotId"
+    fun adminTeacher(cedula: String?) = "admin/teacher?cedula=${Uri.encode(cedula.orEmpty())}"
+    fun adminLab(labId: Long?) = "admin/lab?labId=${labId ?: 0}"
     fun attendanceDetail(slotId: Long, date: String) = "attendance/$slotId/$date"
     fun faceEnroll(cedula: String = "", name: String = "") = "face-enroll?cedula=${Uri.encode(cedula)}&name=${Uri.encode(name)}"
     fun labDetail(id: Long) = "lab/$id"
@@ -174,6 +190,10 @@ private fun MainScaffold(user: User, vm: SessionViewModel, openAlerts: Boolean, 
                     Routes.ATTENDANCE_DETAIL -> "Lista de asistencia"
                     Routes.FACE_ENROLL -> "Registro facial"
                     Routes.REPORTS -> "Reportes"
+                    Routes.SUBJECT -> "Materia"
+                    Routes.ADMIN -> "Administración"
+                    Routes.ADMIN_TEACHER -> "Docente"
+                    Routes.ADMIN_LAB -> "Laboratorio"
                     else -> "OmniFlow App"
                 },
                 unread = unread,
@@ -201,7 +221,13 @@ private fun MainScaffold(user: User, vm: SessionViewModel, openAlerts: Boolean, 
             }
         },
     ) { padding ->
-        NavHost(nav, startDestination = Routes.DASHBOARD) {
+        NavHost(
+            nav, startDestination = Routes.DASHBOARD,
+            enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(260)) { it / 6 } },
+            exitTransition = { fadeOut(tween(160)) },
+            popEnterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(260)) { -it / 6 } },
+            popExitTransition = { fadeOut(tween(160)) + slideOutHorizontally(tween(220)) { it / 6 } },
+        ) {
             composable(Routes.DASHBOARD) {
                 DashboardScreen(
                     padding,
@@ -229,11 +255,31 @@ private fun MainScaffold(user: User, vm: SessionViewModel, openAlerts: Boolean, 
                     navArgument("name") { type = NavType.StringType; defaultValue = "" },
                 ),
             ) { FaceEnrollScreen(padding, onDone = { nav.popBackStack() }) }
-            composable(Routes.PROFILE) { ProfileScreen(padding, onOpenSettings = { nav.navigate(Routes.SETTINGS) }) }
-            composable(Routes.ALERTS) { AlertsScreen(padding) }
+            composable(Routes.PROFILE) {
+                ProfileScreen(padding, onOpenSettings = { nav.navigate(Routes.SETTINGS) }, onOpenAdmin = { nav.navigate(Routes.ADMIN) })
+            }
+            composable(Routes.ALERTS) { AlertsScreen(padding, onOpenLab = { nav.navigate(Routes.labDetail(it)) }) }
+            composable(Routes.SUBJECT, arguments = listOf(navArgument("slotId") { type = NavType.LongType })) {
+                SubjectScreen(padding, onTakeAttendance = { id, date -> nav.navigate(Routes.attendanceDetail(id, date)) })
+            }
+            composable(Routes.ADMIN) {
+                AdminScreen(padding, onEditTeacher = { nav.navigate(Routes.adminTeacher(it)) }, onEditLab = { nav.navigate(Routes.adminLab(it)) })
+            }
+            composable(Routes.ADMIN_TEACHER, arguments = listOf(navArgument("cedula") { type = NavType.StringType; defaultValue = "" })) {
+                TeacherFormScreen(padding, onDone = { nav.popBackStack() })
+            }
+            composable(Routes.ADMIN_LAB, arguments = listOf(navArgument("labId") { type = NavType.LongType; defaultValue = 0L })) {
+                LabFormScreen(padding)
+            }
             composable(Routes.SETTINGS) { SettingsScreen(padding) }
             composable(Routes.LAB_DETAIL, arguments = listOf(navArgument("labId") { type = NavType.LongType })) {
-                LabDetailScreen(padding, onMonitor = { nav.navigateTopLevel(Routes.MONITOR) })
+                val labId = it.arguments?.getLong("labId") ?: 0L
+                LabDetailScreen(
+                    padding,
+                    onMonitor = { nav.navigateTopLevel(Routes.MONITOR) },
+                    onOpenSubject = { id -> nav.navigate(Routes.subject(id)) },
+                    onEditLab = { nav.navigate(Routes.adminLab(labId)) },
+                )
             }
         }
     }

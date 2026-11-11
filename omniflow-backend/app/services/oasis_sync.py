@@ -53,6 +53,14 @@ def hm(text: str) -> int:
     return int(h) * 60 + int(m)
 
 
+def clean_email(text: str | None) -> str:
+    """OASIS a veces devuelve el correo como 'mailto:usuario@dominio'."""
+    t = (text or "").strip()
+    if t.lower().startswith("mailto:"):
+        t = t[7:]
+    return t.strip().lower()
+
+
 def title(s: str) -> str:
     return " ".join(w.capitalize() for w in (s or "").split())
 
@@ -138,8 +146,10 @@ class OasisSync:
         rep.teachers = len(teachers)
         rep.students = len(students)
         # Cuentas propias (clave inicial = cedula) para docentes y estudiantes nuevos.
+        from app.services.teachers import apply_assignments
         from app.services.users import ensure_accounts
         rep.accounts_created = ensure_accounts(self.db)
+        apply_assignments(self.db)
         self.db.commit()
         return rep
 
@@ -171,7 +181,7 @@ class OasisSync:
                 if isinstance(doc, dict) and doc.get("Cedula"):
                     teachers.setdefault(doc["Cedula"], {
                         "nombres": doc.get("Nombres", "").strip(), "apellidos": doc.get("Apellidos", "").strip(),
-                        "email": doc.get("Email", "").strip(), "career": career})
+                        "email": clean_email(doc.get("Email")), "career": career})
 
         # Docentes escritos en el PDF que no aparecen en los dictados: buscarlos en los dictados del resto de la malla.
         hints = {s.teacher_hint for s in slots if s.teacher_hint}
@@ -183,7 +193,7 @@ class OasisSync:
                     if isinstance(doc, dict) and doc.get("Cedula"):
                         teachers.setdefault(doc["Cedula"], {
                             "nombres": doc.get("Nombres", "").strip(), "apellidos": doc.get("Apellidos", "").strip(),
-                            "email": doc.get("Email", "").strip(), "career": career})
+                            "email": clean_email(doc.get("Email")), "career": career})
 
         # 3) horario del periodo de cada docente -> indice materia -> [(cedula, dia, inicio, fin)]
         career_teachers = [c for c, t in teachers.items() if t.get("career") == career]
@@ -266,7 +276,7 @@ class OasisSync:
                 info = level_info.get(ced, {})
                 students.setdefault(ced, {
                     "nombres": a.get("Nombres", "").strip(), "apellidos": a.get("Apellidos", "").strip(),
-                    "email": (a.get("Email") or "").strip(), "codigo": (info.get("Codigo") or "").strip(),
+                    "email": clean_email(a.get("Email")), "codigo": (info.get("Codigo") or "").strip(),
                     "level": int(info.get("CodNivel") or s.level or 0), "career": career})
             self._links[s.id] = seen
             s.enrolled = len(seen)

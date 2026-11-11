@@ -1,6 +1,34 @@
 package ec.edu.espoch.omniflow.ui.screens.attendance
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextAlign
+import ec.edu.espoch.omniflow.ui.components.AnimatedValueText
+import ec.edu.espoch.omniflow.ui.components.InitialsAvatar
+import ec.edu.espoch.omniflow.ui.components.PulsingDot
+import ec.edu.espoch.omniflow.ui.components.RingProgress
+import ec.edu.espoch.omniflow.ui.screens.subject.AddPersonDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -122,6 +150,7 @@ data class ClassesState(
     val loading: Boolean = false,
     val classes: List<ClassSummaryDto> = emptyList(),
     val error: String? = null,
+    val demo: Boolean = false,
 )
 
 @HiltViewModel
@@ -133,83 +162,188 @@ class AttendanceClassesViewModel @Inject constructor(
     private val _state = MutableStateFlow(ClassesState())
     val state: StateFlow<ClassesState> = _state
 
-    init { load() }
+    init {
+        viewModelScope.launch {
+            while (true) {
+                load().join()
+                // La clase en curso cambia con el tiempo: se refresca sola cada minuto.
+                delay(60_000)
+            }
+        }
+    }
 
     fun load() = viewModelScope.launch {
         val s = _state.value
-        _state.update { it.copy(loading = true, error = null) }
+        _state.update { it.copy(loading = true, error = null, demo = repo.isDemo()) }
         repo.classes(s.date, s.mine)
             .onSuccess { list -> _state.update { it.copy(loading = false, classes = list) } }
             .onFailure { e -> _state.update { it.copy(loading = false, classes = emptyList(), error = e.message) } }
     }
 
     fun shiftDay(d: Long) { _state.update { it.copy(date = it.date.plusDays(d)) }; load() }
+    fun today() { _state.update { it.copy(date = LocalDate.now()) }; load() }
     fun setMine(v: Boolean) { _state.update { it.copy(mine = v) }; load() }
 }
 
+private fun ClassSummaryDto.attended() = present + late + justified
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceClassesScreen(padding: PaddingValues, onOpen: (Long, String) -> Unit, vm: AttendanceClassesViewModel = hiltViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
     val user by vm.user.collectAsStateWithLifecycle()
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp, padding.calculateTopPadding() + 12.dp, 16.dp, padding.calculateBottomPadding() + 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Asistencia", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                IconButton(onClick = { vm.load() }) { Icon(Icons.Default.Refresh, "Actualizar") }
-            }
-        }
-        item {
-            AppCard(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { vm.shiftDay(-1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Día anterior") }
-                    Text(s.date.format(DAY_FMT).replaceFirstChar { it.titlecase() }, Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    IconButton(onClick = { vm.shiftDay(1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Día siguiente") }
-                }
-            }
-        }
-        if (user?.role?.name in listOf("ADMINISTRADOR", "COORDINADOR")) {
+    var howOpen by rememberSaveable { mutableStateOf(false) }
+    val live = s.classes.filter { it.state == "EN_CURSO" }
+    val next = s.classes.filter { it.state == "PROGRAMADA" }
+    val done = s.classes.filter { it.state == "FINALIZADA" }
+
+    PullToRefreshBox(isRefreshing = s.loading, onRefresh = { vm.load() }, modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp, padding.calculateTopPadding() + 12.dp, 16.dp, padding.calculateBottomPadding() + 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = s.mine, onClick = { vm.setMine(true) }, label = { Text("Mis clases") })
-                    FilterChip(selected = !s.mine, onClick = { vm.setMine(false) }, label = { Text("Todos los laboratorios") })
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Asistencia", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    if (s.date != LocalDate.now()) TextButton(onClick = vm::today) { Text("Hoy") }
+                    IconButton(onClick = { vm.load() }) { Icon(Icons.Default.Refresh, "Actualizar") }
+                }
+            }
+            item {
+                AppCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { vm.shiftDay(-1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Día anterior") }
+                        AnimatedContent(s.date, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "date", modifier = Modifier.weight(1f)) { d ->
+                            Text(d.format(DAY_FMT).replaceFirstChar { it.titlecase() }, Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
+                        }
+                        IconButton(onClick = { vm.shiftDay(1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Día siguiente") }
+                    }
+                }
+            }
+            if (s.classes.isNotEmpty()) item { DaySummary(s.classes) }
+            item { HowItWorks(s.demo, howOpen) { howOpen = !howOpen } }
+            if (s.demo) {
+                item {
+                    InfoBanner("Modo demostración: toca una clase y agrega personas para practicar. La asistencia se guarda solo en este teléfono.",
+                        color = StatusAmber)
+                }
+            }
+            if (!s.demo && user?.role?.name in listOf("ADMINISTRADOR", "COORDINADOR")) {
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = s.mine, onClick = { vm.setMine(true) }, label = { Text("Mis clases") })
+                        FilterChip(selected = !s.mine, onClick = { vm.setMine(false) }, label = { Text("Todos los laboratorios") })
+                    }
+                }
+            }
+            s.error?.let { item { InfoBanner(it) } }
+            if (!s.loading && s.error == null && s.classes.isEmpty()) {
+                item { EmptyState(Icons.Default.EventBusy, "Sin clases este día", "No hay clases de laboratorio programadas para esta fecha.") }
+            }
+            classSection("En curso", live, onOpen)
+            classSection("Próximas", next, onOpen)
+            classSection("Finalizadas", done, onOpen)
+            if (!s.demo) item { PdfEnrollCard(staff = true, onDone = { vm.load() }) }
+        }
+    }
+}
+
+private fun LazyListScope.classSection(title: String, list: List<ClassSummaryDto>, onOpen: (Long, String) -> Unit) {
+    if (list.isEmpty()) return
+    item(key = "h-$title") { Text("$title (${list.size})", style = MaterialTheme.typography.titleSmall, color = InkSoft) }
+    items(list, key = { "${it.slotId}-${it.date}" }) { c -> ClassCard(c, Modifier.animateItem()) { onOpen(c.slotId, c.date) } }
+}
+
+@Composable
+private fun DaySummary(classes: List<ClassSummaryDto>) {
+    val total = classes.sumOf { it.total }
+    val attended = classes.sumOf { it.attended() }
+    AppCard(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RingProgress(if (total == 0) 0f else attended.toFloat() / total, size = 68.dp,
+                center = if (total == 0) "—" else "${attended * 100 / total}%")
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Resumen del día", style = MaterialTheme.typography.titleSmall)
+                Text("${classes.size} clase(s) · $attended de $total estudiantes con asistencia",
+                    style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                val live = classes.count { it.state == "EN_CURSO" }
+                if (live > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PulsingDot(StatusGreen, 8.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text("$live en curso ahora", style = MaterialTheme.typography.labelMedium, color = StatusGreen)
+                    }
                 }
             }
         }
-        item { PdfEnrollCard(staff = true, onDone = { vm.load() }) }
-        s.error?.let { item { InfoBanner(it) } }
-        if (s.loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
-        if (!s.loading && s.error == null && s.classes.isEmpty()) {
-            item { EmptyState(Icons.Default.EventBusy, "Sin clases este día", "No hay clases de laboratorio programadas para esta fecha.") }
-        }
-        items(s.classes, key = { it.slotId }) { c -> ClassCard(c) { onOpen(c.slotId, c.date) } }
     }
 }
 
 @Composable
-private fun ClassCard(c: ClassSummaryDto, onClick: () -> Unit) {
-    AppCard(Modifier.fillMaxWidth(), onClick) {
+private fun HowItWorks(demo: Boolean, open: Boolean, onToggle: () -> Unit) {
+    AppCard(Modifier.fillMaxWidth().animateContentSize(), onClick = onToggle) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, null, tint = EspochRed)
+                Spacer(Modifier.width(8.dp))
+                Text("¿Cómo se toma la asistencia?", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = InkSoft)
+            }
+            if (open) {
+                val steps = if (demo) listOf(
+                    "Abre una clase y agrega a las personas que asisten.",
+                    "Marca a cada una como presente, atraso, ausente o justificado.",
+                    "Al terminar la clase, quien no tenga marca queda como ausente.",
+                ) else listOf(
+                    "Cada estudiante registra su rostro una vez (con fotos o con su PDF de matrícula).",
+                    "Durante la clase, la cámara del laboratorio lo reconoce y lo marca como presente o atrasado (10 min).",
+                    "El docente revisa la lista y puede corregir cualquier registro a mano.",
+                    "Al terminar la clase, los inscritos sin registro quedan como ausentes.",
+                )
+                steps.forEachIndexed { i, t ->
+                    Row(verticalAlignment = Alignment.Top) {
+                        Box(Modifier.size(22.dp).clip(CircleShape).background(RedSoft), contentAlignment = Alignment.Center) {
+                            Text("${i + 1}", color = EspochRed, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(t, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassCard(c: ClassSummaryDto, modifier: Modifier, onClick: () -> Unit) {
+    val live = c.state == "EN_CURSO"
+    AppCard(modifier.fillMaxWidth(), onClick) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(c.subject, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${ScheduleSlot.fmt(c.startMinute)}–${ScheduleSlot.fmt(c.endMinute)} · ${c.labCode} · ${c.parallel}",
+                    Text("${ScheduleSlot.fmt(c.startMinute)}–${ScheduleSlot.fmt(c.endMinute)} · ${c.labCode}" +
+                        if (c.parallel.isNotBlank()) " · ${c.parallel}" else "",
                         style = MaterialTheme.typography.bodySmall, color = InkSoft)
-                    Text(c.teacher, style = MaterialTheme.typography.bodySmall, color = InkSoft, maxLines = 1)
+                    Text(c.teacher.ifBlank { "Sin docente" }, style = MaterialTheme.typography.bodySmall, color = InkSoft, maxLines = 1)
                 }
-                Text(
-                    when (c.state) { "EN_CURSO" -> "En curso"; "FINALIZADA" -> "Finalizada"; else -> "Programada" },
-                    color = if (c.state == "EN_CURSO") StatusGreen else InkSoft, style = MaterialTheme.typography.labelMedium,
-                )
+                if (live) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        PulsingDot(StatusGreen, 8.dp)
+                        Spacer(Modifier.width(4.dp))
+                        Text("En vivo", color = StatusGreen, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Text(if (c.state == "FINALIZADA") "Finalizada" else "Programada", color = InkSoft, style = MaterialTheme.typography.labelMedium)
+                }
             }
             Spacer(Modifier.height(8.dp))
-            val attended = c.present + c.late + c.justified
+            val progress by animateFloatAsState(if (c.total == 0) 0f else c.attended().toFloat() / c.total, tween(700), label = "att")
             LinearProgressIndicator(
-                progress = { if (c.total == 0) 0f else attended.toFloat() / c.total },
+                progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                 color = StatusGreen, trackColor = RedSoft, strokeCap = StrokeCap.Round,
             )
@@ -218,7 +352,7 @@ private fun ClassCard(c: ClassSummaryDto, onClick: () -> Unit) {
                 Count("Presentes", c.present + c.late, StatusGreen)
                 Count(if (c.state == "FINALIZADA") "Ausentes" else "Faltan", if (c.state == "FINALIZADA") c.absent else c.pending + c.absent, EspochRed)
                 Count("Inscritos", c.total, InkSoft)
-                Count("Con rostro", c.facesEnrolled, InkSoft)
+                if (c.facesEnrolled > 0 || c.state != "PROGRAMADA") Count("Con rostro", c.facesEnrolled, InkSoft)
             }
         }
     }
@@ -227,7 +361,7 @@ private fun ClassCard(c: ClassSummaryDto, onClick: () -> Unit) {
 @Composable
 private fun Count(label: String, n: Int, color: Color) {
     Column {
-        Text("$n", style = MaterialTheme.typography.titleMedium, color = color)
+        AnimatedValueText("$n", style = MaterialTheme.typography.titleMedium, color = color)
         Text(label, style = MaterialTheme.typography.labelSmall, color = InkSoft)
     }
 }
@@ -241,6 +375,7 @@ data class DetailState(
     val filter: StudentFilter = StudentFilter.TODOS,
     val error: String? = null,
     val editing: AttendanceStudentDto? = null,
+    val demo: Boolean = false,
 )
 
 @HiltViewModel
@@ -261,18 +396,29 @@ class AttendanceDetailViewModel @Inject constructor(handle: SavedStateHandle, pr
     }
 
     suspend fun load() {
+        val demo = repo.isDemo()
         repo.detail(slotId, date)
-            .onSuccess { d -> _state.update { it.copy(loading = false, data = d, error = null) } }
-            .onFailure { e -> _state.update { it.copy(loading = false, error = e.message) } }
+            .onSuccess { d -> _state.update { it.copy(loading = false, data = d, error = null, demo = demo) } }
+            .onFailure { e -> _state.update { it.copy(loading = false, error = e.message, demo = demo) } }
     }
 
     fun refresh() = viewModelScope.launch { _state.update { it.copy(loading = true) }; load() }
     fun setFilter(f: StudentFilter) = _state.update { it.copy(filter = f) }
     fun edit(s: AttendanceStudentDto?) = _state.update { it.copy(editing = s) }
 
-    fun mark(cedula: String, status: String) = viewModelScope.launch {
+    fun mark(student: AttendanceStudentDto, status: String) = viewModelScope.launch {
         _state.update { it.copy(editing = null) }
-        repo.mark(slotId, cedula, date, status).onFailure { e -> _state.update { it.copy(error = e.message) } }
+        repo.mark(slotId, student, date, status).onFailure { e -> _state.update { it.copy(error = e.message) } }
+        load()
+    }
+
+    fun addPerson(nombres: String, apellidos: String, cedula: String, done: (String?) -> Unit) = viewModelScope.launch {
+        repo.addLocalPerson(slotId, nombres, apellidos, cedula).onSuccess { done(null); load() }.onFailure { done(it.message) }
+    }
+
+    fun removePerson(id: Long) = viewModelScope.launch {
+        _state.update { it.copy(editing = null) }
+        repo.removeLocalPerson(id)
         load()
     }
 }
@@ -281,14 +427,17 @@ class AttendanceDetailViewModel @Inject constructor(handle: SavedStateHandle, pr
 fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String) -> Unit, vm: AttendanceDetailViewModel = hiltViewModel()) {
     val s by vm.state.collectAsStateWithLifecycle()
     val d = s.data
+    val haptic = LocalHapticFeedback.current
     val time = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var adding by remember { mutableStateOf(false) }
     val shown = d?.students.orEmpty().filter {
         when (s.filter) {
             StudentFilter.TODOS -> true
             StudentFilter.PRESENTES -> it.status in listOf("PRESENTE", "ATRASO", "JUSTIFICADO")
             StudentFilter.FALTAN -> it.status in listOf("AUSENTE", "PENDIENTE")
         }
-    }
+    }.filter { query.isBlank() || "${it.apellidos} ${it.nombres}".contains(query, true) || it.cedula.contains(query) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -309,20 +458,48 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
             }
             item {
                 AppCard(Modifier.fillMaxWidth()) {
-                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                        Count("Presentes", d.present, StatusGreen)
-                        Count("Atrasos", d.late, StatusAmber)
-                        Count(if (d.state == "FINALIZADA") "Ausentes" else "Faltan", if (d.state == "FINALIZADA") d.absent else d.pending + d.absent, EspochRed)
-                        Count("Justif.", d.justified, Color(0xFF1E88E5))
-                        Count("Personas cámara", d.peopleDetected ?: 0, InkSoft)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val attended = d.present + d.late + d.justified
+                        RingProgress(if (d.total == 0) 0f else attended.toFloat() / d.total, size = 64.dp,
+                            center = if (d.total == 0) "—" else "${attended * 100 / d.total}%")
+                        Spacer(Modifier.width(12.dp))
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.weight(1f)) {
+                            Count("Presentes", d.present, StatusGreen)
+                            Count("Atrasos", d.late, StatusAmber)
+                            Count(if (d.state == "FINALIZADA") "Ausentes" else "Faltan", if (d.state == "FINALIZADA") d.absent else d.pending + d.absent, EspochRed)
+                            Count("Justif.", d.justified, Color(0xFF1E88E5))
+                        }
                     }
                 }
             }
-            if (d.state == "EN_CURSO") item { InfoBanner("Clase en curso: la lista se actualiza sola cada 10 s con los rostros que reconoce la cámara.", color = StatusGreen) }
-            if (d.facesEnrolled < d.total) {
+            if (d.state == "EN_CURSO") {
+                item {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(StatusGreen.copy(alpha = 0.08f)).padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        PulsingDot(StatusGreen, 9.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            if (s.demo) "Clase en curso: marca a cada persona a medida que llega."
+                            else "Clase en curso: la lista se actualiza sola cada 10 s con los rostros que reconoce la cámara" +
+                                (d.peopleDetected?.let { " (ahora ve $it persona(s))" } ?: "") + ".",
+                            style = MaterialTheme.typography.bodySmall, color = StatusGreen,
+                        )
+                    }
+                }
+            }
+            if (!s.demo && d.facesEnrolled < d.total) {
                 item {
                     InfoBanner("${d.total - d.facesEnrolled} estudiante(s) aún no registran su rostro: la cámara no puede reconocerlos. " +
                         "Toca un estudiante para registrarlo o corregir su asistencia.", color = StatusAmber)
+                }
+            }
+            if (s.demo) {
+                item {
+                    OutlinedButton(onClick = { adding = true }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
+                        Icon(Icons.Default.PersonAdd, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Agregar persona a la clase")
+                    }
                 }
             }
             item {
@@ -330,25 +507,40 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
                     StudentFilter.entries.forEach { f -> FilterChip(selected = s.filter == f, onClick = { vm.setFilter(f) }, label = { Text(f.label) }) }
                 }
             }
+            if (d.students.size > 8) {
+                item {
+                    OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(12.dp),
+                        leadingIcon = { Icon(Icons.Default.Search, null) }, placeholder = { Text("Buscar estudiante") })
+                }
+            }
+            if (d.students.isEmpty()) {
+                item {
+                    Text(if (s.demo) "Todavía no hay personas en esta clase." else "Esta clase no tiene estudiantes inscritos.",
+                        style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                }
+            }
         }
         s.error?.let { item { InfoBanner(it) } }
         if (s.loading && d == null) item { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { CircularProgressIndicator() } }
-        items(shown, key = { it.cedula }) { st ->
-            AppCard(Modifier.fillMaxWidth(), onClick = { vm.edit(st) }) {
+        items(shown, key = { it.localId?.let { id -> "L$id" } ?: it.cedula }) { st ->
+            AppCard(Modifier.fillMaxWidth().animateItem(), onClick = { vm.edit(st) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (st.faceEnrolled) Icons.Default.Face else Icons.Default.FaceRetouchingOff, null,
+                    if (st.localId != null) InitialsAvatar("${st.nombres} ${st.apellidos}", size = 32.dp, tint = statusColor(st.status))
+                    else Icon(if (st.faceEnrolled) Icons.Default.Face else Icons.Default.FaceRetouchingOff, null,
                         tint = if (st.faceEnrolled) StatusGreen else StatusGrey, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text("${st.apellidos} ${st.nombres}".trim(), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val how = when (st.method) {
                             "ROSTRO" -> "Reconocido ${st.firstSeen?.let { time.format(Date(it)) } ?: ""} · ${(st.confidence * 100).toInt()}%"
-                            "MANUAL" -> "Registro manual"
-                            else -> st.cedula
+                            "MANUAL" -> "Registro manual" + (st.firstSeen?.let { " · ${time.format(Date(it))}" } ?: "")
+                            else -> if (st.localId != null && st.cedula.startsWith("L")) "Sin cédula" else st.cedula
                         }
                         Text(how, style = MaterialTheme.typography.bodySmall, color = InkSoft)
                     }
-                    StatusPill(st.status)
+                    AnimatedContent(st.status, transitionSpec = { (scaleIn() + fadeIn()) togetherWith fadeOut() }, label = "status") { status ->
+                        StatusPill(status)
+                    }
                 }
             }
         }
@@ -360,10 +552,13 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
             title = { Text("${st.nombres} ${st.apellidos}".trim()) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Corregir asistencia:", style = MaterialTheme.typography.bodySmall, color = InkSoft)
+                    Text("Marcar asistencia:", style = MaterialTheme.typography.bodySmall, color = InkSoft)
                     listOf("PRESENTE", "ATRASO", "AUSENTE", "JUSTIFICADO").forEach { status ->
                         Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { vm.mark(st.cedula, status) }.padding(10.dp),
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                                .background(if (st.status == status) statusColor(status).copy(alpha = 0.12f) else Color.Transparent)
+                                .clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); vm.mark(st, status) }
+                                .padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(Icons.Default.EditNote, null, tint = statusColor(status))
@@ -374,13 +569,18 @@ fun AttendanceDetailScreen(padding: PaddingValues, onEnrollFace: (String, String
                 }
             },
             confirmButton = {
-                TextButton(onClick = { vm.edit(null); onEnrollFace(st.cedula, "${st.nombres} ${st.apellidos}".trim()) }) {
-                    Text(if (st.faceEnrolled) "Volver a registrar rostro" else "Registrar rostro")
+                if (st.localId != null) {
+                    TextButton(onClick = { vm.removePerson(st.localId) }) { Text("Quitar de la clase", color = EspochRed) }
+                } else {
+                    TextButton(onClick = { vm.edit(null); onEnrollFace(st.cedula, "${st.nombres} ${st.apellidos}".trim()) }) {
+                        Text(if (st.faceEnrolled) "Volver a registrar rostro" else "Registrar rostro")
+                    }
                 }
             },
             dismissButton = { TextButton(onClick = { vm.edit(null) }) { Text("Cerrar") } },
         )
     }
+    if (adding) AddPersonDialog(onDismiss = { adding = false }, onSave = vm::addPerson)
 }
 
 // ============================================================================ estudiante: mi asistencia

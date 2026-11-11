@@ -1,5 +1,6 @@
 package ec.edu.espoch.omniflow.ui.screens.dashboard
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -170,7 +171,7 @@ fun DashboardScreen(
             }
         }
         items(s.labs.sortedBy { it.status.ordinal }.take(4), key = { it.lab.id }) { snap ->
-            LabCard(snap) { onOpenLab(snap.lab.id) }
+            Box(Modifier.animateItem()) { LabCard(snap) { onOpenLab(snap.lab.id) } }
         }
         item { Spacer(Modifier.height(8.dp)) }
     }
